@@ -1,13 +1,13 @@
-# Instantaneous PITPH function for total system, includes mingen operations
+#------------------------------------------------------------------------------
+# Function binds project operational constraints with flow and deired 
+# spill level data.
+#
+# Ryan N. Kinzer
+# August 2018
+#------------------------------------------------------------------------------
 
 pitphOps <- function(x, spp, project, flow, spill){
-  
-  # requires dplyr
 
-  # stopifnot(is.data.frame(x),
-  #           "flow" %in% tolower(names(df)),
-  #           "spill" %in% tolower(names(df)))
-  
   #------------------------------------------------------------------------------
   # Create dataframe of true operation constriants and PITPH coefficients
   #------------------------------------------------------------------------------

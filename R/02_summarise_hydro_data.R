@@ -9,7 +9,29 @@ library(dplyr)
 library(ggplot2)
 library(lubridate)
 
-load("./data/hydro_data.rda")
+load("../pitph_data/hydro_data.rda")
+
+# rearrange flow data into wide format with only inflow and spill metrics.
+hydro_wide <- hydro_data %>%
+  filter(variable %in% c("Inflow", "Spill", "Spill_percent")) %>%
+  spread(key = variable, value = value) %>%
+  #mutate(Date = str_sub(Date, 6)) %>%
+  select(Year:Date, Day:Spill_percent)
+
+save(hydro_wide, file = './data/flow_data.rda')
+
+hydro_wide%>%
+  filter(Year == 2018) %>%
+  ggplot() +
+  #geom_smooth(aes(x = Date, y = fit), method = 'lm', formula = y ~ poly(x,2)) +
+  geom_line(aes(x = Date, y = Inflow)) +
+  #scale_x_date(date_breaks = '2 weeks') +
+  #geom_line(aes(x = Date, y = fit)) +
+  facet_wrap(~Site) +
+  theme_bw()+
+  labs(x = 'Date',
+       y = 'Inflow (kcfs)')
+
 
 # classify flow years into low, average, high based off flow
 

@@ -1,5 +1,9 @@
-# Instantaneous PITPH function for total system, includes mingen operations
-
+#------------------------------------------------------------------------------
+# Function calculates the estiamte PITPH based on CSS model coefficients.  
+#
+# Ryan N. Kinzer
+# August 2018
+#------------------------------------------------------------------------------
 
 pitph <- function(x,
                   species = c('Chinook', 'Steelhead'), 
@@ -8,44 +12,24 @@ pitph <- function(x,
                   spill = NULL,
                   na.rm = TRUE){
   
-  
-  #species = match.arg(species)
-  #project = match.arg(project)
-  
-   if(!na.rm){
-   !is.null(flow)|| stop("flow is null")
-   is.numeric(flow) & flow >= 0||stop("flow is not a positive number")
-   }
-   
-   !is.null(spill)||stop("spill is null")
-   is.numeric(spill) & spill >= 0||stop("spill is not a positive number")
-  
+   # if(!na.rm){
+   # !is.null(flow)|| stop("flow is null")
+   # is.numeric(flow) & flow >= 0||stop("flow is not a positive number")
+   # }
+   # 
+   #  if(!na.rm){  
+   # !is.null(spill)||stop("spill is null")
+   # is.numeric(spill) & spill >= 0||stop("spill is not a positive number")
+   #  }
 
   #------------------------------------------------------------------------------
   # Check flow and spill volumes and reset if out of compliance
   #------------------------------------------------------------------------------
-  
-  # if(operation_contraints==TRUE){}
-  # mingen_df <- data.frame(min_ph_flow = c(12, 12, 14.5, 10.5, 55, 51.2, 56, 42),
-  #                         gas_cap_spill = c(41, 40, 36, 85, 146, 146, 135, 130),
-  #                         ph_capacity = c(118, 118, 115.5, 95.5, 177, 270.8, 319, 349),
-  #                         uncontrolled_spill = c(171, 170, 166, 191, 378, 468, 510, 518),
-  #                         row.names = c('LWG', 'LGS', 'LMN', 'IHR', 'MCN', 'JDA', 'TDA', 'BON'))
-  # 
-  # tmp_mingen <- mingen_df[project,]
   # 
    tmp_spill_prop <- ifelse(spill >= 0.0 & spill <= 1.0, spill, spill/flow)
    tmp_spill_vol <- flow*tmp_spill_prop
    tmp_spill <- tmp_spill_prop
    
-   # 
-  # #stopifnot(flow < tmp_spill_vol)
-  # 
-  # spill_vol <- ifelse(flow > (tmp_mingen[,1] + tmp_spill_vol), tmp_spill_vol, flow-tmp_mingen[,1]) # account for mingen operations
-  # spill_vol2 <- ifelse(flow < tmp_mingen[,3] + spill_vol, spill_vol, flow - tmp_mingen[,3]) # account for uncontrolled spill
-  # 
-  # tmp_spill <- spill_vol2/flow  # get minimum PH flow set.
-  
   #------------------------------------------------------------------------------
   # Get model coefficients
   #------------------------------------------------------------------------------
@@ -54,7 +38,7 @@ fge <- data.frame(Chinook = c(0.78,	0.8,	0.8,	0.86,	0.81,	0.65),
             Steelhead = c(0.83, 0.87, 0.94, 0.95, 0.76, 0.87),
             row.names = c('LWG', 'LGS', 'LMN', 'IHR', 'MCN', 'JDA'))
 
-coef <- list(Chinook = data.frame(
+coef <- list(Chinook = data.frame( # coefficients to estimate detection probs and produce CSS SPE curves
                   coef = c('Intercept', 'Flow', 'PropSpill', 'Flow*PropSpill', 'Weir'),
                   LWG = c(1.5651,	-0.0055,	-7.5713,	0.0237, 0),
                   LGS = c(0.8561,	0.0071,	-8.8597,	0.0185, 0),
@@ -80,8 +64,6 @@ coef <- list(Chinook = data.frame(
              )
   )
 
-
-
 if(project == 'BON'){
   
   mod_ests_cc <- coef[[species]][1,'BON_cc'] + coef[[species]][2,'BON_cc']*flow + coef[[species]][3,'BON_cc']*tmp_spill + coef[[species]][4,'BON_cc']*flow*tmp_spill + coef[[species]][5,'BON_cc']
@@ -102,12 +84,6 @@ if(project == 'BON'){
 
 }
 
-#spe <- 1 - pitph
-#PH_vol <- flow - spill_vol2
-
 return(pitph)
-
-# return(data.frame(species, project, flow, spill_rate = spill, PH_vol, spill_vol = spill_vol2, 
-#                   spill_prop = tmp_spill, PITPH = pitph, SPE = spe))
 
 }
