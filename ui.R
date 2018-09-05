@@ -81,30 +81,70 @@ shinyUI(
                                   uiOutput('flow_value_input'),
                           # column(3,
                                   h3(tags$b("Powerhouse Surface Passage:")),
+                        fluidRow(column(6,
                                   numericInput(inputId = 'psp_lwg',
                                                label = h4('Lower Granite PSP Efficiency:'),
                                                min = 0,
                                                max = 1,
                                                value = 0,
-                                               step = .05, width = '100%'),
+                                               step = .05, width = '100%')
+                                  ),
+                                 column(6,
                                   numericInput(inputId = 'psp_lgs',
                                                label = h4('Little Goose PSP Efficiency:'),
                                                min = 0,
                                                max = 1,
                                                value = 0,
-                                               step = .05, width = '100%'),
+                                               step = .05, width = '100%')
+                                 )),
+                        fluidRow(column(6,
                                   numericInput(inputId = 'psp_lmn',
-                                               label = h4('Lower Monumental PSP Efficiency:'),
+                                               label = h4('L. Monumental PSP Efficiency:'),
                                                min = 0,
                                                max = 1,
                                                value = 0,
-                                               step = .05, width = '100%'),
+                                               step = .05, width = '100%')
+                        ),
+                        column(6,
                                   numericInput(inputId = 'psp_ihr',
                                                label = h4('Ice Harbor PSP Efficiency:'),
                                                min = 0,
                                                max = 1,
                                                value = 0,
-                                               step = .05, width = '100%'),
+                                               step = .05, width = '100%')
+                        )),
+                        fluidRow(column(6,
+                        numericInput(inputId = 'psp_mcn',
+                                     label = h4('McNary PSP Efficiency:'),
+                                     min = 0,
+                                     max = 1,
+                                     value = 0,
+                                     step = .05, width = '100%')
+                        ),
+                        column(6,
+                        numericInput(inputId = 'psp_jda',
+                                     label = h4('John Day PSP Efficiency:'),
+                                     min = 0,
+                                     max = 1,
+                                     value = 0,
+                                     step = .05, width = '100%')
+                        )),
+                        fluidRow(column(6,
+                        numericInput(inputId = 'psp_tda',
+                                     label = h4('Dalles PSP Efficiency:'),
+                                     min = 0,
+                                     max = 1,
+                                     value = 0,
+                                     step = .05, width = '100%')
+                        ),
+                        column(6,
+                        numericInput(inputId = 'psp_bon',
+                                     label = h4('Bonneville PSP Efficiency:'),
+                                     min = 0,
+                                     max = 1,
+                                     value = 0,
+                                     step = .05, width = '100%')
+                        )),
 
                          
                         h3(tags$b('Spill Level Control and Rate:')),
@@ -323,24 +363,23 @@ shinyUI(
                      column(
                       8,
                       
-                      fluidRow(column(12, align = 'center',
-                                      h4("User defined flow values."),
-                                      uiOutput("sized_flow"))),
-
                       fluidRow(
                         column(
                           12,
                           align = 'center',
-                          h4("Average PITPH and SPE values by project and weighted for daily hours of operation."),
+                          h4("Average PITPH and SPE values weighted for daily hours of operation at each hydrosystem project for the set user defined parameters."),
                           tableOutput('project_table'),
-                          h4("System-wide total PITPH and estimated average SPE across all 8 projects and weighted for daily hours of operation."),
+                          h4("System-wide total PITPH and estimated average SPE across all 8 projects and weighted for daily hours of project operations for the set user
+                             defined parameters."),
                           tableOutput("system_table")
                         )
                       ),
                       
-                       h4(
-                         tags$b('Simulated Daily Flow Volumes in the Columbia and Snake Rivers and the estimated weighted daily average of PITPH.')
-                       ),
+                      fluidRow(column(12, align = 'center',
+                                      h4("Observed and estimated river environment metrics calculated for set user defined parameters."),
+                                      uiOutput("sized_flow"),
+                                      h4("Spill passage efficiency curves and estimated total dissolved gas (TDG)."),
+                                      uiOutput("sized_pitph"))),
 
                        h4(tags$b('References:')),
                        
@@ -364,6 +403,7 @@ shinyUI(
        ), # close fluidRow),
        
        tabPanel('Dataset',
+                downloadButton("data_export", label = "Export .CSV File", class = "mybutton"),
                 DT::DTOutput('param_dat_table')
                 )
        

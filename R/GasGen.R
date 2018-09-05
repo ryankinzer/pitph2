@@ -61,8 +61,8 @@ zTDGSpill <- function(site="LWG",spill=.15,flow=100){
 
 # TEST
 # Compute the expected TDG at the monitoring site
-print(zTDGMON("LWG",FBgas=10, spill=0.9, flow=100))
+#print(zTDGMON("LWG",FBgas=10, spill=0.9, flow=100))
 
 # Compute the expected TDG in the spill water.
-print(zTDGSpill("MCN",spill=0.45, flow=100))
+#print(zTDGSpill("MCN",spill=0.45, flow=100))
 
