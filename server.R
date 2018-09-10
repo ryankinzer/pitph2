@@ -13,9 +13,11 @@ library(tidyverse)
 
 source('./R/simFlow.R')
 source('./R/pitph.R')
-source('./R/pitphOps.R')
+source('./R/mingenOps.R')
 source('./R/queryRiverData.R')
-source('./R/GasGen.R')
+#source('./R/GasGen.R')
+source('./R/zTDGSpill.R')
+source('./R/zTDGMON.R')
 load(file = './data/flow_data.rda')
 
 
@@ -44,7 +46,7 @@ shinyServer(function(input, output) {
                                            label = h4('Simulated Year Figure:'),
                                            choiceNames = c('PITPH and TDG Percents', 'Flow and Spill Volumes'),
                                            choiceValues = c('pitph_tdg', 'flow_vol'),
-                                           selected = 'pitph_tdg')
+                                           selected = 'flow_vol')
                               ),
       
       'Observed Year' = list(sliderInput(inputId = 'obs_flow_year', label = h4('Flow Year: (Accessed from DART)'),
@@ -267,61 +269,54 @@ shinyServer(function(input, output) {
   #------------------------------------------------------------------------------
   # Season-wide PITPH estimates
   #------------------------------------------------------------------------------
-
-  
   
   dat <- reactive({
    
-    switch(input$mod_flow,
+   switch(input$mod_flow,
            
            'Static' = full_join(river_dat(), spill(), by = c('river', 'project', 'project_code')) %>%
-             full_join(psp_dat()) %>%
+             full_join(psp_dat(), by = 'project_code') %>%
              select(species, everything()) %>%
-             pitphOps() %>%
-             select(-spill) %>%
-             rowwise() %>%
-             mutate(estPITPH = pitph(species = species, project = project_code, flow = flow, spill = actual_spill_prop),
-                    TDGmon = zTDGMON(site = project_code, FBgas = 10, spill = actual_spill_prop, flow = flow),
-                    TDGspill = zTDGSpill(site = project_code, spill = actual_spill_prop, flow = flow)) %>%
-             ungroup() %>%
-             mutate(pspPITPH = estPITPH *(1-psp),
-                    w_estPITPH = (pspPITPH*period)/24,
-                    w_TDG = (TDGmon * period)/24),
+          mingenOps() %>%
+            select(-spill) %>%
+            mutate(estPITPH = pitph(species = species, project = project_code, flow = flow, spill = actual_spill_prop),
+                   pspPITPH = estPITPH *(1-psp),
+                   w_estPITPH = (pspPITPH*period)/24,
+                   w_spill = (actual_spill_prop*period)/24,
+                   TDGmon = zTDGMON(project_code = project_code, forebay_gas = 10, flow = flow, spill_prop = actual_spill_prop),
+                   TDGspill = zTDGSpill(project_code = project_code, flow = flow, spill_prop = actual_spill_prop),
+                   w_TDG = (TDGmon * period)/24),
            
            'Simulated Year' = full_join(river_dat(), spill(), by = 'river') %>%
              full_join(psp_dat(), by = 'project_code') %>%
              select(species, river, project, project_code, date, flow, period, psp, spill) %>%
-             pitphOps() %>%
-             select(-spill) %>%
-             rowwise() %>%
-             mutate(estPITPH = pitph(species = species, project = project_code, flow = flow, spill = actual_spill_prop),
-                    TDGmon = zTDGMON(site = project_code, FBgas = 10, spill = actual_spill_prop, flow = flow),
-                    TDGspill = zTDGSpill(site = project_code, spill = actual_spill_prop, flow = flow)) %>%
-             ungroup() %>%
-             mutate(pspPITPH = estPITPH *(1-psp),
-                    w_estPITPH = (pspPITPH*period)/24,
-                    w_TDG = (TDGmon * period)/24) %>%
-             ungroup(),
+          mingenOps() %>%
+            select(-spill) %>%
+            mutate(estPITPH = pitph(species = species, project = project_code, flow = flow, spill = actual_spill_prop),
+                   pspPITPH = estPITPH *(1-psp),
+                   w_estPITPH = (pspPITPH*period)/24,
+                   w_spill = (actual_spill_prop*period)/24,
+                   TDGmon = zTDGMON(project_code = project_code, forebay_gas = 10, flow = flow, spill_prop = actual_spill_prop),
+                   TDGspill = zTDGSpill(project_code = project_code, flow = flow, spill_prop = actual_spill_prop),
+                   w_TDG = (TDGmon * period)/24),
+
            
            'Observed Year' = full_join(river_dat(), spill(), by = 'project_code') %>%
-             full_join(psp_dat()) %>%
+             full_join(psp_dat(), by = 'project_code') %>%
              select(species, river, project, project_code, date, flow, period, psp, obs_spill_prop, obs_spill_vol,
                     obs_dissolved_gas, obs_tdg, spill) %>%
-             pitphOps() %>%
-             select(-spill) %>%
-             rowwise() %>%
-             mutate(obsPITPH = pitph(species = species, project = project_code, flow = flow, spill = obs_spill_prop),
-                    estPITPH = pitph(species = species, project = project_code, flow = flow, spill = actual_spill_prop),
-                    TDGmon = zTDGMON(site = project_code, FBgas = 10, spill = actual_spill_prop, flow = flow),
-                    TDGspill = zTDGSpill(site = project_code, spill = actual_spill_prop, flow = flow)) %>%
-             ungroup() %>%
-             mutate(pspPITPH = estPITPH *(1-psp),
-                    w_estPITPH = (pspPITPH*period)/24,
-                    w_TDG = (TDGmon * period)/24) %>%
-             ungroup()
-           ) 
+            mingenOps() %>%
+            mutate(estPITPH = pitph(species = species, project = project_code, flow = flow, spill = actual_spill_prop),
+                   pspPITPH = estPITPH *(1-psp),
+                   w_estPITPH = (pspPITPH*period)/24,
+                   w_spill = (actual_spill_prop*period)/24,
+                   TDGmon = zTDGMON(project_code = project_code, forebay_gas = 10, flow = flow, spill_prop = actual_spill_prop),
+                   TDGspill = zTDGSpill(project_code = project_code, flow = flow, spill_prop = actual_spill_prop),
+                   w_TDG = (TDGmon * period)/24) %>%
+            mutate(obsPITPH = pitph(species = species, project = project_code, flow = flow, spill = obs_spill_prop))
+           )
   })
-  
+    
   output$param_dat_table <- DT::renderDT({
     DT::datatable(dat() %>%
       mutate(date = str_sub(as.character(date),start = 6)),
@@ -329,9 +324,7 @@ shinyServer(function(input, output) {
     })
   
   # function for downloading data
-  output$data_export <- downloadHandler(  #output name needs to match ui object id name
-    
-    #tmp_export <- export_dat()
+  output$data_export <- downloadHandler(
     
     filename = function() {
       paste0(pitph_data,"_", Sys.Date(), "_.csv")
@@ -383,54 +376,81 @@ shinyServer(function(input, output) {
    switch(input$mod_flow,
    
     "Static" = dat() %>%
-      mutate(project = fct_inorder(project),
-             river = fct_inorder(river),
-             period = paste0(period, " - Hour Period")) %>%
+      group_by(species, river, project, project_code, date) %>%
+    summarise(w_spill = sum(w_spill),
+              w_TDG = sum(w_TDG) + 100,
+              w_PITPH = sum(w_estPITPH)) %>%
+      ungroup() %>%
+      mutate(project = fct_relevel(project, project2),
+             river = fct_inorder(river)) %>%
       ggplot(aes(x = project)) +
-      geom_bar(aes(y = actual_spill_prop, fill = period), stat = 'identity', position = position_dodge()) +
-      #geom_line(aes(y = pspPITPH, group = period), position = position_dodge(width = 1)) +
-      geom_point(aes(y = pspPITPH, colour = TDGmon, shape = period), size = 6, position = position_dodge(width = 1)) +
-      scale_fill_viridis_d(guide = FALSE) +
-      scale_color_gradient2(breaks = c(5,15,25), labels = c("<=105", "115", ">=125"), limits = c(0,25), na.value = 'red', low = "green", mid = "yellow", high = "red") +
-      #facet_wrap(~river, ncol = 2, scales = "free_x") +
+      geom_bar(aes(y = w_PITPH, fill = w_PITPH), stat = 'identity') +
+      geom_point(aes(y = w_spill, colour = w_TDG), size = 10) +
+      scale_fill_viridis_c(option = "D", direction = 1) +
+      #scale_color_viridis_c(option = "B", direction = -1, begin = .5, end = 1) +
+      scale_colour_gradient(breaks = c(95,105,115,125), labels = c("<=95","105", "115", ">=125"), limits = c(95,125), na.value = 'red', low = "yellow", high = "red") +
+      scale_y_continuous(limits = c(0,1)) +
       guides(shape = guide_legend(override.aes = list(size = 4))) +
       theme_bw() +
+      theme(plot.title = element_text(color="#536872", face = 'bold', size=16, hjust=.5),
+            axis.title = element_text(size = 14), axis.text = element_text(size = 12),
+            legend.title = element_text(size = 12), legend.text = element_text(size = 12)) +
       labs(x = 'Project',
-           y = 'PITPH',
-           shape = 'Daily Spill Period',
-           colour = 'Monitoring Site TDG'
+           y = 'PITPH and Spill Proportion',
+           colour = 'TDG Percent',
+           fill = 'PITPH',
+           title = "Estimated PITPH and total dissolved gas (TDG) at static in-flow volumes and set spill rates."
            ),
                  
     "Simulated Year" =  switch(input$sim_plot,
       "flow_vol" = dat() %>%
-      mutate(project = fct_inorder(project),
-             period = paste0(period, " - Hour Period")) %>%
-      select(project, project_code, date, period, flow, set_spill_vol, actual_spill_vol) %>%
-      gather(key = key, value = value, flow:actual_spill_vol) %>%
+        select(species, river, project, project_code, date, period, Inflow = flow, actual_spill_vol) %>%
+        mutate(period = paste0(period, " - Hour Period"),
+               project = fct_inorder(project)) %>%
+        spread(period, actual_spill_vol) %>%
+        gather(key, value, Inflow, contains('Period')) %>%
+        #mutate(key = fct_relevel(key, 'Inflow')) %>%
       ggplot(aes(x = date, y = value)) +
       geom_line(aes(group = key, colour = key), size = 1) +
-      scale_x_date(date_breaks = '2 weeks', date_labels = format("%d-%m")) +
-      scale_colour_viridis_d(name = '', labels = c('Actual Spill', 'Inflow', 'Set Spill')) +
-      facet_grid(project~period, scales = 'free') +
+      scale_x_date(date_breaks = '2 weeks', date_labels = format("%d-%b")) +
+      scale_colour_viridis_d(begin = 0, end = .7) +
+      facet_wrap(~project, scales = 'free', ncol = 2) +
       theme_bw()+
+        theme(plot.title = element_text(color="#536872", face = 'bold', size=16, hjust=.5),
+              axis.title = element_text(size = 14), axis.text = element_text(size = 12),
+              legend.title = element_text(size = 12), legend.text = element_text(size = 12),
+              strip.text = element_text(size = 12)) +
       labs(x = 'Date',
-           y = 'Flow Volume (kcfs)'),
+           colour = 'Flow',
+           y = 'Flow Volume (kcfs)',
+           title = 'Simulated seasonal in-flow and set spill volumes for daily duck spill periods.'),
     
     "pitph_tdg" = dat() %>%
-      mutate(project = fct_inorder(project),
-             period = paste0(period, " - Hour Period")) %>%
-      select(project, project_code, date, period, pspPITPH, TDGmon) %>%
-      mutate(pspPITPH = pspPITPH *100,
-             TDGmon = (TDGmon + 100)) %>%
-      gather(key = key, value = value, pspPITPH:TDGmon) %>%
-      ggplot(aes(x = date, y = value)) +
-      geom_line(aes(group = key, colour = key), size = 1) +
-      scale_x_date(date_breaks = '2 weeks', date_labels = format("%d-%m")) +
-      scale_colour_viridis_d(name = '', labels = c('PITPH', 'TDG')) +
-      facet_grid(project~period, scales = 'free') +
+      group_by(species, river, project, project_code, date) %>%
+      summarise(w_spill = sum(w_spill),
+                w_TDG = sum(w_TDG) + 100,
+                w_PITPH = sum(w_estPITPH)) %>%
+      ungroup() %>%
+      #gather(key, value, w_TDG, w_spill) %>%
+      mutate(project = fct_relevel(project, project2)) %>%
+      ggplot(aes(x = date)) +
+      geom_bar(aes(y = w_PITPH, fill = w_PITPH), stat = 'identity') +
+      geom_line(aes(y = w_spill, colour = w_TDG), size = 1) +
+      scale_x_date(date_breaks = '2 weeks', date_labels = format("%d-%b")) +
+      scale_y_continuous(limits = c(0,1)) +
+      scale_fill_viridis_c(option = "D", direction = 1) +
+      scale_colour_gradient(breaks = c(95,105,115,125), labels = c("<=95","105", "115", ">=125"), limits = c(95,125), na.value = 'red', low = "yellow", high = "red") +
+      facet_wrap(~project, ncol = 2) +
       theme_bw()+
-      labs(x = 'Date',
-           y = 'Percent')
+      theme(plot.title = element_text(color="#536872", face = 'bold', size=16, hjust=.5),
+            axis.title = element_text(size = 14), axis.text = element_text(size = 12),
+            legend.title = element_text(size = 12), legend.text = element_text(size = 12),
+            strip.text = element_text(size = 12)) +
+      labs(title = 'Season-wide set spill proportion (line) and daily estimated PITPH (bars) and total dissolved gas (TDG).',
+           colour = 'TDG Percent',
+           fill = 'PITPH',
+           x = 'Date',
+           y = 'PITPH and Spill Proportion')
     ),
     
     
@@ -446,8 +466,13 @@ shinyServer(function(input, output) {
                                scale_colour_viridis_d(name = '', labels = c('Actual Spill', 'Inflow', 'Observed Spill', 'Set Spill')) +
                                facet_grid(project~period, scales = 'free') +
                                theme_bw()+
+                               theme(plot.title = element_text(color="#536872", face = 'bold', size=16, hjust=.5),
+                                     axis.title = element_text(size = 14), axis.text = element_text(size = 12),
+                                     legend.title = element_text(size = 12), legend.text = element_text(size = 12),
+                                     strip.text = element_text(size = 12)) +
                                labs(x = 'Date',
-                                    y = 'Flow Volume (kcfs)'),
+                                    y = 'Flow Volume (kcfs)',
+                                    title = 'Observed in-flow and spill volumes for selected migratory year and set spill rates.'),
                              
                              "tdg" = dat() %>%
                                mutate(project = fct_inorder(project),
@@ -461,8 +486,12 @@ shinyServer(function(input, output) {
                                scale_colour_viridis_d(name = '', labels = c('Observed TDG', 'Modeled TDG')) +
                                facet_grid(project~period, scales = 'free') +
                                theme_bw()+
+                               theme(plot.title = element_text(color="#536872", face = 'bold', size=16, hjust=.5),
+                                     axis.title = element_text(size = 14), axis.text = element_text(size = 12),
+                                     legend.title = element_text(size = 12), legend.text = element_text(size = 12)) +
                                labs(x = 'Date',
-                                    y = 'Percent'),
+                                    y = 'Percent',
+                                    title = 'Estimated total dissolved gas (TDG) for selected migratory year and observed in-flow and spill conditions and for set spill rates.'),
                              
                              "pitph" = dat() %>%
                                mutate(project = fct_inorder(project),
@@ -475,8 +504,12 @@ shinyServer(function(input, output) {
                                scale_colour_viridis_d(name = '', labels = c('Observed PITPH', 'Modeled PITPH')) +
                                facet_grid(project~period, scales = 'free') +
                                theme_bw()+
+                               theme(plot.title = element_text(color="#536872", face = 'bold', size=16, hjust=.5),
+                                     axis.title = element_text(size = 14), axis.text = element_text(size = 12),
+                                     legend.title = element_text(size = 12), legend.text = element_text(size = 12)) +
                                labs(x = 'Date',
-                                    y = 'PITPH')
+                                    y = 'PITPH',
+                                    title = 'Estimated PITPH for selected migratory year and observed in-flow and spill conditions and for set spill rates.')
     )
     
    )
@@ -494,65 +527,71 @@ shinyServer(function(input, output) {
    
 
   # SPE Curves and TDG
-  
+
   output$spe_curve<- renderPlot({
-    
+
     spill_df <- as.tibble(expand.grid(spill = seq(0, 1, by = .01),
                                       project_code = project_code,
                                       stringsAsFactors = FALSE)) %>%
       left_join(tibble(project_code = project_code,
-                       project = project))
-    
+                       project = project), by = 'project_code')
+
     snake_df <- as.tibble(expand.grid(river = "Snake",
                                       project_code = project_code[1:4],
                                       flow = seq(25,250, by = 25),
                                       stringsAsFactors = FALSE)) %>%
-                inner_join(spill_df)
-    
+                inner_join(spill_df, by = 'project_code')
+
     col_df <- as.tibble(expand.grid(river = "Columbia",
                                     project_code = project_code[5:8],
                                     flow = seq(100, 450, by = 25),
                                     stringsAsFactors = FALSE)) %>%
-                inner_join(spill_df)
-    
+                inner_join(spill_df, by = 'project_code')
+
     tmp_df <- bind_rows(snake_df, col_df) %>%
-      mutate(species = rep('Chinook',n())) %>%
-      pitphOps() %>%
-    #  distinct(project_code, flow, actual_spill_prop, .keep_all = TRUE) %>%
-      rowwise() %>%
+      inner_join(psp_dat(), by = 'project_code') %>%
+      mutate(species = rep(input$spp_input,n())) %>%
+      mingenOps() %>%
       mutate(PITPH = pitph(species = species, project = project_code, flow = flow, spill = actual_spill_prop),
-             TDG = zTDGMON(site = project_code, FBgas = 10, spill = actual_spill_prop)) %>%
-      ungroup() %>%
-      mutate(actual_spill_prop = round(actual_spill_prop, 2),
+             pspPITPH = PITPH * (1-psp),
+             actual_spill_prop = round(actual_spill_prop, 2),
              actual_spill_vol = round(actual_spill_vol, 0),
-            project = fct_inorder(project),
-            project_code = fct_inorder(project_code))
+             project = fct_inorder(project),
+             project_code = fct_inorder(project_code),
+             TDG = zTDGMON(project_code = project_code, forebay_gas = 10, flow = flow, spill_prop = actual_spill_prop)) #%>%
+     #rowwise() %>%
+     # mutate(TDG = zTDGMON(project_code, forebay_gas = 10, spill_prop = actual_spill_prop, flow = flow)) %>%
+     # ungroup()
 
     samp_df <- tmp_df %>%
-      #sample_n(100) %>%
       group_by(project) %>%
-      filter(row_number() %% 35 == 0) %>%      
+      filter(row_number() %% 35 == 0) %>%
       mutate(TDG = round(TDG)+100)
 
 tmp_df %>%
       ggplot() +
-      geom_raster(aes(x = flow, y = actual_spill_prop, fill = PITPH)) +
-      #geom_contour(aes(x = flow, y = set_spill_prop, z = PITPH), colour = "white", binwidth = .1) +
+      geom_raster(aes(x = flow, y = actual_spill_prop, fill = pspPITPH)) +
+      #geom_contour(aes(x = flow, y = set_spill_prop, z = pspPITPH), colour = "white", binwidth = .1) +
       geom_text(data = samp_df, aes(x = flow, y = actual_spill_prop, label = TDG, colour = TDG)) +
-      #scale_color_gradient2(breaks = c(105,115,125), labels = c("<=105", "115", ">=125"), limits = c(110,125), na.value = 'red', low = "green", mid = "yellow", high = "red") +
-      scale_color_viridis_c(option = "B", direction = -1, begin = .5, end = 1) +
+      #scale_color_viridis_c(option = "B", direction = -1, begin = .5, end = 1) +
+      scale_color_gradient(breaks = c(95,105,115,125), labels = c("<=95","105", "115", ">=125"), limits = c(95,125), na.value = 'red', low = "yellow", high = "red") +
       scale_fill_viridis_c(option = "D", direction = 1) +
       scale_x_continuous(expand = c(0,0)) +
       scale_y_continuous(expand = c(0,0)) +
       facet_wrap(~project, scales = "free", ncol = 2) +
       theme_bw() +
-      labs(fill = 'PITPH',
+  theme(plot.title = element_text(color="#536872", face = 'bold', size=16, hjust=.5),
+        axis.title = element_text(size = 14), axis.text = element_text(size = 12),
+        legend.title = element_text(size = 12), legend.text = element_text(size = 12),
+        strip.text = element_text(size = 12)) +
+      labs(title = 'Estimated PITPH and total dissolved gas (TDG) for set in-flow volumes and spill proportions.',
+           fill = 'PITPH',
            colour = 'TDG Percent',
            x = 'Inflow Volume (kcfs)',
            y = 'Spill Proportion')
 
   })
-  
+
   output$sized_pitph <- renderUI({
     plotOutput("spe_curve", height = 800)
   })

@@ -28,8 +28,7 @@ shinyUI(
         id = "footer-id",
         "The data presented in this web application may not be solely collected, managed or owned
         by the Nez Perce Tribe. All data should be considered draft and is not guaranteed for
-        accuracy.  Permission to use the data should be sought from the original collectors and data managers.
-        Citations for the data and R packages used to create this application can be found on the reference tab."
+        accuracy.  Permission to use the data should be sought from the original collectors and data managers."
       )
       ),
     
@@ -66,7 +65,7 @@ shinyUI(
                         #  column(3,
                                  radioButtons(inputId = 'spe_curve',
                                               label = h3(tags$b('Spill Passage Efficiency Curves:')),
-                                              choices = c('CSS', 'COMPASS'),
+                                              choices = c('CSS', 'COMPASS (Currently not available.)'),
                                               selected = 'CSS', inline = TRUE),#),
                          #  column(3,
                             radioButtons(inputId = 'spp_input',
@@ -376,9 +375,10 @@ shinyUI(
                       ),
                       
                       fluidRow(column(12, align = 'center',
-                                      h4("Observed and estimated river environment metrics calculated for set user defined parameters."),
+                                      #h4("Observed and estimated river environment metrics calculated for set user defined parameters."),
                                       uiOutput("sized_flow"),
-                                      h4("Spill passage efficiency curves and estimated total dissolved gas (TDG)."),
+                                      #h4("Spill passage efficiency curves and estimated total dissolved gas (TDG)"),
+                                      #h5("TDG is currently missing because the functions are computational slow and render the application unusable."),
                                       uiOutput("sized_pitph"))),
 
                        h4(tags$b('References:')),
