@@ -7,7 +7,6 @@
 # Created on: 7 July 2018
 #------------------------------------------------------------------------------
 
-library(purrr)
 library(tidyverse)
 library(lubridate)
 library(RSQLite)
@@ -15,49 +14,41 @@ library(DBI)
 
 source('./R/queryJuvenilePIT.R')
 
-# run query to get proper table format and field names
-tmp_dat <- queryJuvenilePIT(species = 'Chinook',
-                            run = 'Spring',
-                            rear_type = 'Wild',
-                            life_stage = 'Juvenile',
-                            site = 'LWG',
-                            year = 2018,
-                            start_day = '03/1',
-                            end_day = '07/01')
-
-tmp_dat <- mutate_all(tmp_dat, as.character)
-
-field_names <- str_c(names(tmp_dat), ' TEXT', collapse = ', ')
-
 #------------------------------------------------------------------------------
 # Iniitalize data base for storing data using field names collected above
 #------------------------------------------------------------------------------
 
+# create db connection
 con <- dbConnect(SQLite(), dbname = './data/arrival.sqlite')
 
 # create table with proper format
-dbSendQuery(con,
-            paste("CREATE TABLE obs (", field_names, ")"))
-
-#dbWriteTable(con, "obs", tmp_dat, append = TRUE)
+if(!dbExistsTable(con, 'obs')){
+  
+  # run query to get proper table format and field names
+  tmp_dat <- queryJuvenilePIT(species = 'Chinook',
+                              run = 'All',
+                              rear_type = 'Wild',
+                              life_stage = 'Juvenile',
+                              site = 'BON',
+                              year = 2006,
+                              start_day = '05/1',
+                              end_day = '05/30')
+  
+  # get names of fields returned from DART query
+  field_names <- str_c(names(tmp_dat), ' TEXT', collapse = ', ')
+  
+  dbSendQuery(con, paste("CREATE TABLE obs (", field_names, ")"))
+}
 
 #------------------------------------------------------------------------------
 # Set up lists of species, dams and years to gather all data
 #------------------------------------------------------------------------------
 spp <- c('Chinook', 'Steelhead')
-
-dams <- c('LWG', 'LGS', 'LMN', 'IHR', 'MCN', 'JDA', 'TDA', 'BON')
-#dams_list = as.list(dams)
-#names(dams_list) = dams
-
-year_range <- 2006:year(Sys.Date())
-year_list = as.list(year_range)
-names(year_list) = year_range
+dams <- c('LWG', 'LGS', 'LMN', 'IHA', 'MCN', 'JDA', 'BON')
+year_range <- 2010:2018#2006:year(Sys.Date())
 
 for(i in 1:length(dams)){
   for(j in 1:length(spp)){
-  #tmp <- purrr::map_dfr(.x = year_list, .id = 'Year',  #.x = dams_list, .y = year_list,
-  #                      .f = function(x){
     for(l in 1:length(year_range)){
    tmp <- queryJuvenilePIT(species = spp[j],
                                            run = 'All',
@@ -67,15 +58,10 @@ for(i in 1:length(dams)){
                                            year = year_range[l],
                                            start_day = '03/01',
                                            end_day = '07/01')
+   tmp <- mutate_all(tmp, as.character)
 
   dbWriteTable(con, "obs", tmp, append = TRUE)
-  #df <- rbind(df, tmp)
     }
   }  
 }
 
-
-
-
-
-#save(all_will_juv, file = "./data/wild_arrival_data.rda")

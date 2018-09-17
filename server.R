@@ -25,9 +25,9 @@ load(file = './data/flow_data.rda')
 shinyServer(function(input, output) {
   
   # Static Values
-  project = c('Lower Granite', 'Little Goose', 'Lower Monumental', 'Ice Harbor', 'McNary', 'John Day', 'Dalles', 'Bonneville')
+  #project = c('Lower Granite', 'Little Goose', 'Lower Monumental', 'Ice Harbor', 'McNary', 'John Day', 'Dalles', 'Bonneville')
   project2 = c('Lower Granite', 'Little Goose', 'Lower Monumental', 'Ice Harbor', 'McNary', 'John Day', 'Dalles', 'Bonneville')
-  project_code = c('LWG', 'LGS', 'LMN', 'IHR', 'MCN', 'JDA', 'TDA', 'BON')
+  project_code2 = c('LWG', 'LGS', 'LMN', 'IHR', 'MCN', 'JDA', 'TDA', 'BON')
   
   
   # Model flow type
@@ -72,24 +72,27 @@ shinyServer(function(input, output) {
       
       switch(input$mod_flow,
              'Static' = tibble(river = rep(c('Snake River', 'Columbia River'), each = 4),
-                                     project = project,
-                                     project_code = project_code,
+                                     project = project2,
+                                     project_code = project_code2,
                                      date = ymd("20180601"),
                                      flow = rep(c(input$snake_values, input$columbia_values), each = 4)),
+                                     
              
              'Simulated Year' =     simFlow(river = 'Snake', flow_year = input$ave_flow) %>%  #input$ave_flow
                                   bind_rows(simFlow(river = 'Columbia', flow_year = input$ave_flow)) %>%  #input$ave_flow
                                   select(river = River, date = Day, flow = sim_flow) %>%
+                                  ungroup() %>%
                                   mutate(river = paste0(river, " River"),
                                          date = as.Date(date, origin = "2017-01-01")),
-
-             'Observed Year' = map_dfr(.x = project_code,
+             
+             'Observed Year' = map_dfr(.x = project_code2,
                                      .f = function(x) {queryRiverData(site = x, year = input$obs_flow_year,
                                                                  start_day = '03/01',
                                                                  end_day = '06/30') %>%
                                          select(project_code = Site, date = Date, flow = Inflow,
                                                 obs_spill_prop = Spill_percent, obs_spill_vol = Spill,
-                                                obs_dissolved_gas = Dissolved_Gas, obs_tdg = TDG)})
+                                                obs_dissolved_gas = Dissolved_Gas, obs_tdg = TDG)
+                                         })
             )
     
   })
@@ -97,7 +100,7 @@ shinyServer(function(input, output) {
 # get powerhouse spillway passage efficiency
   # PITPH * (1 - PSP) = the proportion going through PH and JBS
   psp_dat <- reactive({
-    tibble(project_code = project_code,
+    tibble(project_code = project_code2,
            psp = c(input$psp_lwg, input$psp_lgs, input$psp_lmn, input$psp_ihr, input$psp_mcn, input$psp_jda, input$psp_tda, input$psp_bon))
   })
     
@@ -253,7 +256,7 @@ shinyServer(function(input, output) {
   spill <- reactive({
   tibble(species = rep(input$spp_input, 16),  #input$spp_input
          river = rep(c('Snake River', 'Columbia River'), each = 8),
-         project = rep(project, each = 2), project_code = rep(project_code, each = 2),
+         project = rep(project2, each = 2), project_code = rep(project_code2, each = 2),
          period = rep(c(16, 8), 8),
          spill = as.numeric(c(input$high_spill_lwg, input$low_spill_lwg,
                         input$high_spill_lgs, input$low_spill_lgs,
@@ -277,11 +280,13 @@ shinyServer(function(input, output) {
            'Static' = full_join(river_dat(), spill(), by = c('river', 'project', 'project_code')) %>%
              full_join(psp_dat(), by = 'project_code') %>%
              select(species, everything()) %>%
+            mutate(transport = if_else(yday(date) >= 115 & project_code %in% c('LWG', 'LGS', 'LMN'), 1, 0)) %>%
           mingenOps() %>%
             select(-spill) %>%
             mutate(estPITPH = pitph(species = species, project = project_code, flow = flow, spill = actual_spill_prop),
                    pspPITPH = estPITPH *(1-psp),
-                   w_estPITPH = (pspPITPH*period)/24,
+                   tranPITPH = pspPITPH - ((pspPITPH * fge) * transport),
+                   w_estPITPH = (tranPITPH*period)/24,
                    w_spill = (actual_spill_prop*period)/24,
                    TDGmon = zTDGMON(project_code = project_code, forebay_gas = 10, flow = flow, spill_prop = actual_spill_prop),
                    TDGspill = zTDGSpill(project_code = project_code, flow = flow, spill_prop = actual_spill_prop),
@@ -290,11 +295,13 @@ shinyServer(function(input, output) {
            'Simulated Year' = full_join(river_dat(), spill(), by = 'river') %>%
              full_join(psp_dat(), by = 'project_code') %>%
              select(species, river, project, project_code, date, flow, period, psp, spill) %>%
-          mingenOps() %>%
+            mutate(transport = if_else(yday(date) >= 115 & project_code %in% c('LWG', 'LGS', 'LMN'), 1, 0)) %>%
+            mingenOps() %>%
             select(-spill) %>%
             mutate(estPITPH = pitph(species = species, project = project_code, flow = flow, spill = actual_spill_prop),
                    pspPITPH = estPITPH *(1-psp),
-                   w_estPITPH = (pspPITPH*period)/24,
+                   tranPITPH = pspPITPH - ((pspPITPH * fge) * transport),
+                   w_estPITPH = (tranPITPH*period)/24,
                    w_spill = (actual_spill_prop*period)/24,
                    TDGmon = zTDGMON(project_code = project_code, forebay_gas = 10, flow = flow, spill_prop = actual_spill_prop),
                    TDGspill = zTDGSpill(project_code = project_code, flow = flow, spill_prop = actual_spill_prop),
@@ -305,10 +312,12 @@ shinyServer(function(input, output) {
              full_join(psp_dat(), by = 'project_code') %>%
              select(species, river, project, project_code, date, flow, period, psp, obs_spill_prop, obs_spill_vol,
                     obs_dissolved_gas, obs_tdg, spill) %>%
+            mutate(transport = if_else(yday(date) >= 115 & project_code %in% c('LWG', 'LGS', 'LMN'), 1, 0)) %>%
             mingenOps() %>%
             mutate(estPITPH = pitph(species = species, project = project_code, flow = flow, spill = actual_spill_prop),
                    pspPITPH = estPITPH *(1-psp),
-                   w_estPITPH = (pspPITPH*period)/24,
+                   tranPITPH = pspPITPH - ((pspPITPH * fge) * transport),
+                   w_estPITPH = (tranPITPH*period)/24,
                    w_spill = (actual_spill_prop*period)/24,
                    TDGmon = zTDGMON(project_code = project_code, forebay_gas = 10, flow = flow, spill_prop = actual_spill_prop),
                    TDGspill = zTDGSpill(project_code = project_code, flow = flow, spill_prop = actual_spill_prop),
@@ -327,16 +336,16 @@ shinyServer(function(input, output) {
   output$data_export <- downloadHandler(
     
     filename = function() {
-      paste0(pitph_data,"_", Sys.Date(), "_.csv")
+      paste0("pitph_data_", Sys.Date(), "_.csv")
     },
     content = function(filename) {
-      write.csv(param_dat_table(), filename, row.names = FALSE)
+      write.csv(mutate_all(dat(), as.character), filename, row.names = FALSE)
     }
   )
 
   
   output$project_table <- renderTable({ 
-    
+
     dat() %>%
       mutate(project = factor(project, levels=project2)) %>%
       group_by(project, date) %>%
@@ -355,18 +364,18 @@ shinyServer(function(input, output) {
   
   output$system_table <- renderTable({ 
     
-    dat() %>%
-      mutate(project = factor(project, levels=project2)) %>%
-      group_by(project, date) %>%
-      summarise(PITPH = sum(w_estPITPH, na.rm = TRUE),
-                SPE = 1 - PITPH) %>%
-      ungroup() %>%
-      group_by(project) %>%
-      summarise(PITPH = mean(PITPH, na.rm = TRUE),
-                SPE = mean(SPE, na.rm = TRUE)) %>%
-      ungroup() %>%
-      summarise(`Total PITPH` = sum(PITPH),
-                `Average SPE` = mean(SPE))
+      dat() %>%
+        mutate(project = factor(project, levels=project2)) %>%
+        group_by(project, date) %>%
+        summarise(PITPH = sum(w_estPITPH, na.rm = TRUE),
+                  SPE = 1 - PITPH) %>%
+        ungroup() %>%
+        group_by(project) %>%
+        summarise(PITPH = mean(PITPH, na.rm = TRUE),
+                  SPE = mean(SPE, na.rm = TRUE)) %>%
+        ungroup() %>%
+        summarise(`Total PITPH` = sum(PITPH),
+                  `Average SPE` = mean(SPE))
   })
   
   
@@ -384,9 +393,11 @@ shinyServer(function(input, output) {
       mutate(project = fct_relevel(project, project2),
              river = fct_inorder(river)) %>%
       ggplot(aes(x = project)) +
-      geom_bar(aes(y = w_PITPH, fill = w_PITPH), stat = 'identity') +
-      geom_point(aes(y = w_spill, colour = w_TDG), size = 10) +
+      geom_bar(aes(y = w_spill, fill = project), stat = 'identity') +
+      #geom_line(aes(x = project, y = w_PITPH), colour = 'black', size = 2) +
+      geom_point(aes(y = w_PITPH, colour = w_TDG), size = 20) +
       scale_fill_viridis_c(option = "D", direction = 1) +
+      scale_fill_viridis_d() +
       #scale_color_viridis_c(option = "B", direction = -1, begin = .5, end = 1) +
       scale_colour_gradient(breaks = c(95,105,115,125), labels = c("<=95","105", "115", ">=125"), limits = c(95,125), na.value = 'red', low = "yellow", high = "red") +
       scale_y_continuous(limits = c(0,1)) +
@@ -398,8 +409,8 @@ shinyServer(function(input, output) {
       labs(x = 'Project',
            y = 'PITPH and Spill Proportion',
            colour = 'TDG Percent',
-           fill = 'PITPH',
-           title = "Estimated PITPH and total dissolved gas (TDG) at static in-flow volumes and set spill rates."
+           fill = 'Project',
+           title = "Estimated PITPH (point) and total dissolved gas (TDG; point color) at static in-flow volumes and set spill proportions (bars)."
            ),
                  
     "Simulated Year" =  switch(input$sim_plot,
@@ -531,19 +542,57 @@ shinyServer(function(input, output) {
   output$spe_curve<- renderPlot({
 
     spill_df <- as.tibble(expand.grid(spill = seq(0, 1, by = .01),
-                                      project_code = project_code,
+                                      project_code = project_code2,
                                       stringsAsFactors = FALSE)) %>%
-      left_join(tibble(project_code = project_code,
-                       project = project), by = 'project_code')
+      left_join(tibble(project_code = project_code2,
+                       project = project2), by = 'project_code')
+    
+    if(input$mod_flow == 'Static'){
+      tmp_df <- inner_join(spill_df, river_dat(), by = 'project_code') %>%
+        inner_join(psp_dat(), by = 'project_code') %>%
+        left_join(tibble(project_code = project_code2,
+                         project = project2), by = 'project_code') %>%
+        mutate(species = rep(input$spp_input,n()),
+               transport = if_else(yday(date) >= 115 & project_code %in% c('LWG', 'LGS', 'LMN'), 1, 0)) %>%
+        mingenOps() %>%
+        mutate(PITPH = pitph(species = species, project = project_code, flow = flow, spill = actual_spill_prop),
+               pspPITPH = PITPH * (1-psp),
+               tranPITPH = pspPITPH - ((pspPITPH * fge) * transport),
+               actual_spill_prop = round(actual_spill_prop, 2),
+               actual_spill_vol = round(actual_spill_vol, 0),
+               project_code = fct_inorder(project_code),
+               project = fct_inorder(project),
+               TDG = zTDGMON(project_code = project_code, forebay_gas = 10, flow = flow, spill_prop = actual_spill_prop))
+      
+      ggplot(tmp_df, aes(x = actual_spill_prop, y = tranPITPH, group = project_code, colour = project)) + # changed data from tmp_curve
+        geom_line(size = 2) +
+        #geom_text(aes(label = round(TDG)+100),hjust = 1, colour = 'black') +
+        geom_point(aes(fill = round(TDG)+100), shape = 21, size = 3) +
+        scale_color_viridis_d() +
+        scale_x_continuous(breaks = seq(0,1, by = .1), labels = seq(0, 1, by = .1)) +
+        scale_y_continuous(breaks = seq(0,1, by = .1), labels = seq(0, 1, by = .1)) +
+        scale_fill_gradient(breaks = c(95,105,115,125), labels = c("<=95","105", "115", ">=125"), limits = c(95,125), na.value = 'red', low = "yellow", high = "red") +
+        theme_bw() +
+        theme(plot.title = element_text(color="#536872", face = 'bold', size=16, hjust=.5),
+              axis.title = element_text(size = 14), axis.text = element_text(size = 12),
+              legend.title = element_text(size = 12), legend.text = element_text(size = 12)) +
+        labs(x = 'Spill Proportion',
+             y = 'PITPH',
+             title = 'Estimated PITPH (y-axis) and total dissolved gas (point color) at static in-flow volumes and set spill proportions (x-axis).',
+             caption = '',
+             colour = 'Project',
+             fill = 'TDG Percent')
+      
+    } else {
 
     snake_df <- as.tibble(expand.grid(river = "Snake",
-                                      project_code = project_code[1:4],
+                                      project_code = project_code2[1:4],
                                       flow = seq(25,250, by = 25),
                                       stringsAsFactors = FALSE)) %>%
                 inner_join(spill_df, by = 'project_code')
 
     col_df <- as.tibble(expand.grid(river = "Columbia",
-                                    project_code = project_code[5:8],
+                                    project_code = project_code2[5:8],
                                     flow = seq(100, 450, by = 25),
                                     stringsAsFactors = FALSE)) %>%
                 inner_join(spill_df, by = 'project_code')
@@ -589,6 +638,8 @@ tmp_df %>%
            colour = 'TDG Percent',
            x = 'Inflow Volume (kcfs)',
            y = 'Spill Proportion')
+    
+    }
 
   })
 

@@ -81,7 +81,7 @@ shinyUI(
                           # column(3,
                                   h3(tags$b("Powerhouse Surface Passage:")),
                         fluidRow(column(6,
-                                  numericInput(inputId = 'psp_lwg',
+                                  sliderInput(inputId = 'psp_lwg',
                                                label = h4('Lower Granite PSP Efficiency:'),
                                                min = 0,
                                                max = 1,
@@ -89,7 +89,7 @@ shinyUI(
                                                step = .05, width = '100%')
                                   ),
                                  column(6,
-                                  numericInput(inputId = 'psp_lgs',
+                                  sliderInput(inputId = 'psp_lgs',
                                                label = h4('Little Goose PSP Efficiency:'),
                                                min = 0,
                                                max = 1,
@@ -97,7 +97,7 @@ shinyUI(
                                                step = .05, width = '100%')
                                  )),
                         fluidRow(column(6,
-                                  numericInput(inputId = 'psp_lmn',
+                                        sliderInput(inputId = 'psp_lmn',
                                                label = h4('L. Monumental PSP Efficiency:'),
                                                min = 0,
                                                max = 1,
@@ -105,7 +105,7 @@ shinyUI(
                                                step = .05, width = '100%')
                         ),
                         column(6,
-                                  numericInput(inputId = 'psp_ihr',
+                               sliderInput(inputId = 'psp_ihr',
                                                label = h4('Ice Harbor PSP Efficiency:'),
                                                min = 0,
                                                max = 1,
@@ -113,7 +113,7 @@ shinyUI(
                                                step = .05, width = '100%')
                         )),
                         fluidRow(column(6,
-                        numericInput(inputId = 'psp_mcn',
+                                        sliderInput(inputId = 'psp_mcn',
                                      label = h4('McNary PSP Efficiency:'),
                                      min = 0,
                                      max = 1,
@@ -121,7 +121,7 @@ shinyUI(
                                      step = .05, width = '100%')
                         ),
                         column(6,
-                        numericInput(inputId = 'psp_jda',
+                               sliderInput(inputId = 'psp_jda',
                                      label = h4('John Day PSP Efficiency:'),
                                      min = 0,
                                      max = 1,
@@ -129,7 +129,7 @@ shinyUI(
                                      step = .05, width = '100%')
                         )),
                         fluidRow(column(6,
-                        numericInput(inputId = 'psp_tda',
+                                        sliderInput(inputId = 'psp_tda',
                                      label = h4('Dalles PSP Efficiency:'),
                                      min = 0,
                                      max = 1,
@@ -137,7 +137,7 @@ shinyUI(
                                      step = .05, width = '100%')
                         ),
                         column(6,
-                        numericInput(inputId = 'psp_bon',
+                               sliderInput(inputId = 'psp_bon',
                                      label = h4('Bonneville PSP Efficiency:'),
                                      min = 0,
                                      max = 1,
@@ -403,8 +403,11 @@ shinyUI(
        ), # close fluidRow),
        
        tabPanel('Dataset',
-                downloadButton("data_export", label = "Export .CSV File", class = "mybutton"),
+                downloadButton("data_export", label = "Export .CSV File"),
                 DT::DTOutput('param_dat_table')
+                ),
+       tabPanel('Probability Diagram',
+                div(id = 'diagram', img(src = "FCRPS_prob_diagram.png"))
                 )
        
       ) # closes tabSetPanel
