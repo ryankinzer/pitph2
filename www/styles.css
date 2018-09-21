@@ -42,6 +42,18 @@ background-image: none !important;
 */
 
 
+.shiny-notification{
+  position:fixed;
+  font-size: 25px;
+  font-weight: bold;
+  width: 50%;
+  top: calc(50%);
+  left: calc(25%);
+  background-color: gray;
+  color: red;
+}
+
+
 #header-id{
   font-family: serif;
   font-size: 40px;

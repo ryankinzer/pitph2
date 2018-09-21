@@ -99,10 +99,24 @@ shinyServer(function(input, output) {
   
 # get powerhouse spillway passage efficiency
   # PITPH * (1 - PSP) = the proportion going through PH and JBS
+
   psp_dat <- reactive({
     tibble(project_code = project_code2,
            psp = c(input$psp_lwg, input$psp_lgs, input$psp_lmn, input$psp_ihr, input$psp_mcn, input$psp_jda, input$psp_tda, input$psp_bon))
   })
+  
+  observeEvent(psp_dat(), {
+    
+    tmp_psp <- psp_dat() %>% pull(psp)
+    
+    if(!is.null(input$psp_lwg) & length(which(tmp_psp>1))>0 | length(which(tmp_psp<0))>0){
+      showNotification("Error:  Powerhouse surface passage efficiency must be between 0.0 and 1.0.",
+                       duration = NULL,
+                       closeButton = TRUE, type = 'error')
+    }
+  })
+
+
     
   #------------------------------------------------------------------------------  
   # Create spill sliders based on user input; volume or proportion
@@ -114,37 +128,37 @@ shinyServer(function(input, output) {
   output$lwg_high_spill_slider <- renderUI({
     if(input$lwg_high_spill_value == 'Volume'){
       #sliderInput(inputId = 'spill_lwg', label = "", min = 0, max = 250, step = 10, value = 20)
-      sliderInput(inputId = 'high_spill_lwg', label = "", min = 0, max = 250, value = 20)
+      numericInput(inputId = 'high_spill_lwg', label = "", min = 0, max = 250, value = 20)
     } else {
-      #sliderInput(inputId = 'spill_lwg', label = "", min = 0, max = 1, step = .05, value = .25)
-      sliderInput(inputId = 'high_spill_lwg', label = "", min = 0, max = 1.0, value = .25)
+      #numericInput(inputId = 'spill_lwg', label = "", min = 0, max = 1, step = .05, value = .25)
+      numericInput(inputId = 'high_spill_lwg', label = "", min = 0, max = 1.0, value = .25)
     }
   })
   
   output$lwg_low_spill_slider <- renderUI({
     if(input$lwg_low_spill_value == 'Volume'){
       #sliderInput(inputId = 'spill_lwg', label = "", min = 0, max = 250, step = 10, value = 20)
-      sliderInput(inputId = 'low_spill_lwg', label = "", min = 0, max = 250, value = 20)
+      numericInput(inputId = 'low_spill_lwg', label = "", min = 0, max = 250, value = 20)
     } else {
-      #sliderInput(inputId = 'spill_lwg', label = "", min = 0, max = 1, step = .05, value = .25)
-      sliderInput(inputId = 'low_spill_lwg', label = "", min = 0, max = 1.0, value = .25)
+      #numericInput(inputId = 'spill_lwg', label = "", min = 0, max = 1, step = .05, value = .25)
+      numericInput(inputId = 'low_spill_lwg', label = "", min = 0, max = 1.0, value = .25)
     }
   })
   
   # Little Goose
   output$lgs_high_spill_slider <- renderUI({
     if(input$lgs_high_spill_value == 'Volume'){
-      sliderInput(inputId = 'high_spill_lgs', label = "", min = 0, max = 250, value = 30)
+      numericInput(inputId = 'high_spill_lgs', label = "", min = 0, max = 250, value = 30)
     } else {
-      sliderInput(inputId = 'high_spill_lgs', label = "", min = 0, max = 1, value = .30)
+      numericInput(inputId = 'high_spill_lgs', label = "", min = 0, max = 1, value = .30)
     }
   })
   
   output$lgs_low_spill_slider <- renderUI({
     if(input$lgs_low_spill_value == 'Volume'){
-      sliderInput(inputId = 'low_spill_lgs', label = "", min = 0, max = 250, value = 30)
+      numericInput(inputId = 'low_spill_lgs', label = "", min = 0, max = 250, value = 30)
     } else {
-      sliderInput(inputId = 'low_spill_lgs', label = "", min = 0, max = 1, value = .30)
+      numericInput(inputId = 'low_spill_lgs', label = "", min = 0, max = 1, value = .30)
     }
   })
   
@@ -152,17 +166,17 @@ shinyServer(function(input, output) {
   
   output$lmn_high_spill_slider <- renderUI({
     if(input$lmn_high_spill_value == 'Volume'){
-      sliderInput(inputId = 'high_spill_lmn', label = "", min = 0, max = 250, value = 25)
+      numericInput(inputId = 'high_spill_lmn', label = "", min = 0, max = 250, value = 25)
     } else {
-      sliderInput(inputId = 'high_spill_lmn', label = "", min = 0, max = 1, value = .25)
+      numericInput(inputId = 'high_spill_lmn', label = "", min = 0, max = 1, value = .25)
     }
   })
   
   output$lmn_low_spill_slider <- renderUI({
     if(input$lmn_low_spill_value == 'Volume'){
-      sliderInput(inputId = 'low_spill_lmn', label = "", min = 0, max = 250, value = 25)
+      numericInput(inputId = 'low_spill_lmn', label = "", min = 0, max = 250, value = 25)
     } else {
-      sliderInput(inputId = 'low_spill_lmn', label = "", min = 0, max = 1, value = .25)
+      numericInput(inputId = 'low_spill_lmn', label = "", min = 0, max = 1, value = .25)
     }
   })
   
@@ -170,85 +184,85 @@ shinyServer(function(input, output) {
   # Ice Harbor - ihr
   output$ihr_high_spill_slider <- renderUI({
     if(input$ihr_high_spill_value == 'Volume'){
-      sliderInput(inputId = 'high_spill_ihr', label = "", min = 0, max = 250, value = 30)
+      numericInput(inputId = 'high_spill_ihr', label = "", min = 0, max = 250, value = 30)
     } else {
-      sliderInput(inputId = 'high_spill_ihr', label = "", min = 0, max = 1, value = .30)
+      numericInput(inputId = 'high_spill_ihr', label = "", min = 0, max = 1, value = .30)
     }
   })
   
   output$ihr_low_spill_slider <- renderUI({
     if(input$ihr_low_spill_value == 'Volume'){
-      sliderInput(inputId = 'low_spill_ihr', label = "", min = 0, max = 250, value = 30)
+      numericInput(inputId = 'low_spill_ihr', label = "", min = 0, max = 250, value = 30)
     } else {
-      sliderInput(inputId = 'low_spill_ihr', label = "", min = 0, max = 1, value = .30)
+      numericInput(inputId = 'low_spill_ihr', label = "", min = 0, max = 1, value = .30)
     }
   })
   
   # McNary - mcn
   output$mcn_high_spill_slider <- renderUI({
     if(input$mcn_high_spill_value == 'Volume'){
-      sliderInput(inputId = 'high_spill_mcn', label = "", min = 0, max = 450, value = 125)
+      numericInput(inputId = 'high_spill_mcn', label = "", min = 0, max = 450, value = 125)
     } else {
-      sliderInput(inputId = 'high_spill_mcn', label = "", min = 0, max = 1, value = .50)
+      numericInput(inputId = 'high_spill_mcn', label = "", min = 0, max = 1, value = .50)
     }
   })
   
   output$mcn_low_spill_slider <- renderUI({
     if(input$mcn_low_spill_value == 'Volume'){
-      sliderInput(inputId = 'low_spill_mcn', label = "", min = 0, max = 450, value = 125)
+      numericInput(inputId = 'low_spill_mcn', label = "", min = 0, max = 450, value = 125)
     } else {
-      sliderInput(inputId = 'low_spill_mcn', label = "", min = 0, max = 1, value = .50)
+      numericInput(inputId = 'low_spill_mcn', label = "", min = 0, max = 1, value = .50)
     }
   })
   
   # John Day - jda
   output$jda_high_spill_slider <- renderUI({
     if(input$jda_high_spill_value == 'Volume'){
-      sliderInput(inputId = 'high_spill_jda', label = "", min = 0, max = 450, value = 75)
+      numericInput(inputId = 'high_spill_jda', label = "", min = 0, max = 450, value = 75)
     } else {
-      sliderInput(inputId = 'high_spill_jda', label = "", min = 0, max = 1, value = .30)
+      numericInput(inputId = 'high_spill_jda', label = "", min = 0, max = 1, value = .30)
     }
   })
   
   output$jda_low_spill_slider <- renderUI({
     if(input$jda_low_spill_value == 'Volume'){
-      sliderInput(inputId = 'low_spill_jda', label = "", min = 0, max = 450, value = 75)
+      numericInput(inputId = 'low_spill_jda', label = "", min = 0, max = 450, value = 75)
     } else {
-      sliderInput(inputId = 'low_spill_jda', label = "", min = 0, max = 1, value = .30)
+      numericInput(inputId = 'low_spill_jda', label = "", min = 0, max = 1, value = .30)
     }
   })
   
   # The Dalles - tda
   output$tda_high_spill_slider <- renderUI({
     if(input$tda_high_spill_value == 'Volume'){
-      sliderInput(inputId = 'high_spill_tda', label = "", min = 0, max = 450, value = 100)
+      numericInput(inputId = 'high_spill_tda', label = "", min = 0, max = 450, value = 100)
     } else {
-      sliderInput(inputId = 'high_spill_tda', label = "", min = 0, max = 1, value = .40)
+      numericInput(inputId = 'high_spill_tda', label = "", min = 0, max = 1, value = .40)
     }
   })
   
   output$tda_low_spill_slider <- renderUI({
     if(input$tda_low_spill_value == 'Volume'){
-      sliderInput(inputId = 'low_spill_tda', label = "", min = 0, max = 450, value = 100)
+      numericInput(inputId = 'low_spill_tda', label = "", min = 0, max = 450, value = 100)
     } else {
-      sliderInput(inputId = 'low_spill_tda', label = "", min = 0, max = 1, value = .40)
+      numericInput(inputId = 'low_spill_tda', label = "", min = 0, max = 1, value = .40)
     }
   })
   
   # Bonneville - bon
   output$bon_high_spill_slider <- renderUI({
     if(input$bon_high_spill_value == 'Volume'){
-      sliderInput(inputId = 'high_spill_bon', label = "", min = 0, max = 450, value = 100)
+      numericInput(inputId = 'high_spill_bon', label = "", min = 0, max = 450, value = 100)
     } else {
-      sliderInput(inputId = 'high_spill_bon', label = "", min = 0, max = 1, value = .40)
+      numericInput(inputId = 'high_spill_bon', label = "", min = 0, max = 1, value = .40)
     }
   })
   
   output$bon_low_spill_slider <- renderUI({
     if(input$bon_low_spill_value == 'Volume'){
-      sliderInput(inputId = 'low_spill_bon', label = "", min = 0, max = 450, value = 100)
+      numericInput(inputId = 'low_spill_bon', label = "", min = 0, max = 450, value = 100)
     } else {
-      sliderInput(inputId = 'low_spill_bon', label = "", min = 0, max = 1, value = .40)
+      numericInput(inputId = 'low_spill_bon', label = "", min = 0, max = 1, value = .40)
     }
   })
   
@@ -368,7 +382,8 @@ shinyServer(function(input, output) {
     
   output$param_dat_table <- DT::renderDT({
     DT::datatable(dat() %>%
-      mutate(date = str_sub(as.character(date),start = 6)),
+      mutate(date = str_sub(as.character(date),start = 6)) %>%
+      mutate_if(is.numeric, round, 2),
       options = list(pageLength = 16))
     })
   

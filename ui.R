@@ -81,15 +81,16 @@ shinyUI(
                           # column(3,
                                   h3(tags$b("Powerhouse Surface Passage:")),
                         fluidRow(column(6,
-                                  sliderInput(inputId = 'psp_lwg',
+                                  numericInput(inputId = 'psp_lwg',
                                                label = h4('Lower Granite PSP Efficiency:'),
                                                min = 0,
                                                max = 1,
                                                value = 0,
-                                               step = .05, width = '100%')
+                                               step = .05, width = '100%'),
+                                  renderText('psp_lwg_error')
                                   ),
                                  column(6,
-                                  sliderInput(inputId = 'psp_lgs',
+                                  numericInput(inputId = 'psp_lgs',
                                                label = h4('Little Goose PSP Efficiency:'),
                                                min = 0,
                                                max = 1,
@@ -97,7 +98,7 @@ shinyUI(
                                                step = .05, width = '100%')
                                  )),
                         fluidRow(column(6,
-                                        sliderInput(inputId = 'psp_lmn',
+                                        numericInput(inputId = 'psp_lmn',
                                                label = h4('L. Monumental PSP Efficiency:'),
                                                min = 0,
                                                max = 1,
@@ -105,7 +106,7 @@ shinyUI(
                                                step = .05, width = '100%')
                         ),
                         column(6,
-                               sliderInput(inputId = 'psp_ihr',
+                               numericInput(inputId = 'psp_ihr',
                                                label = h4('Ice Harbor PSP Efficiency:'),
                                                min = 0,
                                                max = 1,
@@ -113,7 +114,7 @@ shinyUI(
                                                step = .05, width = '100%')
                         )),
                         fluidRow(column(6,
-                                        sliderInput(inputId = 'psp_mcn',
+                                        numericInput(inputId = 'psp_mcn',
                                      label = h4('McNary PSP Efficiency:'),
                                      min = 0,
                                      max = 1,
@@ -121,7 +122,7 @@ shinyUI(
                                      step = .05, width = '100%')
                         ),
                         column(6,
-                               sliderInput(inputId = 'psp_jda',
+                               numericInput(inputId = 'psp_jda',
                                      label = h4('John Day PSP Efficiency:'),
                                      min = 0,
                                      max = 1,
@@ -129,7 +130,7 @@ shinyUI(
                                      step = .05, width = '100%')
                         )),
                         fluidRow(column(6,
-                                        sliderInput(inputId = 'psp_tda',
+                                        numericInput(inputId = 'psp_tda',
                                      label = h4('Dalles PSP Efficiency:'),
                                      min = 0,
                                      max = 1,
@@ -137,7 +138,7 @@ shinyUI(
                                      step = .05, width = '100%')
                         ),
                         column(6,
-                               sliderInput(inputId = 'psp_bon',
+                               numericInput(inputId = 'psp_bon',
                                      label = h4('Bonneville PSP Efficiency:'),
                                      min = 0,
                                      max = 1,
