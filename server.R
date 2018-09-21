@@ -283,13 +283,26 @@ shinyServer(function(input, output) {
             mutate(transport = if_else(yday(date) >= 115 & project_code %in% c('LWG', 'LGS', 'LMN'), 1, 0)) %>%
           mingenOps() %>%
             select(-spill) %>%
-            mutate(estPITPH = pitph(species = species, project = project_code, flow = flow, spill = actual_spill_prop),
-                   pspPITPH = estPITPH *(1-psp),
-                   tranPITPH = pspPITPH - ((pspPITPH * fge) * transport),
-                   w_estPITPH = (tranPITPH*period)/24,
-                   w_spill = (actual_spill_prop*period)/24,
+            mutate(ph_entrance = pitph(species = species, project = project_code, flow = flow, spill = actual_spill_prop),
+                   passage_weir = ph_entrance * psp,
+                   ph = ph_entrance - passage_weir,
+                   jbs = ph * fge,
+                   turbine = ph - jbs,
+                   transported = jbs * transport,
+                   rr = jbs - transported,
+                   spillway = 1 - (passage_weir + turbine + transported + rr),
+                   PITPH = (turbine + rr)/(turbine + rr + spillway + passage_weir),
+                   SPE = 1-PITPH,
                    TDGmon = zTDGMON(project_code = project_code, forebay_gas = 10, flow = flow, spill_prop = actual_spill_prop),
                    TDGspill = zTDGSpill(project_code = project_code, flow = flow, spill_prop = actual_spill_prop),
+                   w_spill = (actual_spill_prop * period)/24,
+                   w_ph_entrance = (ph_entrance * period) /24,
+                   w_psp = (passage_weir * period)/24,
+                   w_turbine = (turbine * period)/24,
+                   w_transported = (transported * period)/24,
+                   w_rr = (rr * period)/24,
+                   w_spillway = (spillway * period)/24,
+                   w_PITPH = (PITPH * period)/24,
                    w_TDG = (TDGmon * period)/24),
            
            'Simulated Year' = full_join(river_dat(), spill(), by = 'river') %>%
@@ -298,13 +311,26 @@ shinyServer(function(input, output) {
             mutate(transport = if_else(yday(date) >= 115 & project_code %in% c('LWG', 'LGS', 'LMN'), 1, 0)) %>%
             mingenOps() %>%
             select(-spill) %>%
-            mutate(estPITPH = pitph(species = species, project = project_code, flow = flow, spill = actual_spill_prop),
-                   pspPITPH = estPITPH *(1-psp),
-                   tranPITPH = pspPITPH - ((pspPITPH * fge) * transport),
-                   w_estPITPH = (tranPITPH*period)/24,
-                   w_spill = (actual_spill_prop*period)/24,
+            mutate(ph_entrance = pitph(species = species, project = project_code, flow = flow, spill = actual_spill_prop),
+                   passage_weir = ph_entrance * psp,
+                   ph = ph_entrance - passage_weir,
+                   jbs = ph * fge,
+                   turbine = ph - jbs,
+                   transported = jbs * transport,
+                   rr = jbs - transported,
+                   spillway = 1 - (passage_weir + turbine + transported + rr),
+                   PITPH = (turbine + rr)/(turbine + rr + spillway + passage_weir),
+                   SPE = 1-PITPH,
                    TDGmon = zTDGMON(project_code = project_code, forebay_gas = 10, flow = flow, spill_prop = actual_spill_prop),
                    TDGspill = zTDGSpill(project_code = project_code, flow = flow, spill_prop = actual_spill_prop),
+                   w_spill = (actual_spill_prop * period)/24,
+                   w_ph_entrance = (ph_entrance * period) /24,
+                   w_psp = (passage_weir * period)/24,
+                   w_turbine = (turbine * period)/24,
+                   w_transported = (transported * period)/24,
+                   w_rr = (rr * period)/24,
+                   w_spillway = (spillway * period)/24,
+                   w_PITPH = (PITPH * period)/24,
                    w_TDG = (TDGmon * period)/24),
 
            
@@ -314,15 +340,29 @@ shinyServer(function(input, output) {
                     obs_dissolved_gas, obs_tdg, spill) %>%
             mutate(transport = if_else(yday(date) >= 115 & project_code %in% c('LWG', 'LGS', 'LMN'), 1, 0)) %>%
             mingenOps() %>%
-            mutate(estPITPH = pitph(species = species, project = project_code, flow = flow, spill = actual_spill_prop),
-                   pspPITPH = estPITPH *(1-psp),
-                   tranPITPH = pspPITPH - ((pspPITPH * fge) * transport),
-                   w_estPITPH = (tranPITPH*period)/24,
-                   w_spill = (actual_spill_prop*period)/24,
+            mutate(obsPITPH = pitph(species = species, project = project_code, flow = flow, spill = obs_spill_prop)) %>%
+            mutate(ph_entrance = pitph(species = species, project = project_code, flow = flow, spill = actual_spill_prop),
+                   passage_weir = ph_entrance * psp,
+                   ph = ph_entrance - passage_weir,
+                   jbs = ph * fge,
+                   turbine = ph - jbs,
+                   transported = jbs * transport,
+                   rr = jbs - transported,
+                   spillway = 1 - (passage_weir + turbine + transported + rr),
+                   PITPH = (turbine + rr)/(turbine + rr + spillway + passage_weir),
+                   SPE = 1-PITPH,
                    TDGmon = zTDGMON(project_code = project_code, forebay_gas = 10, flow = flow, spill_prop = actual_spill_prop),
                    TDGspill = zTDGSpill(project_code = project_code, flow = flow, spill_prop = actual_spill_prop),
-                   w_TDG = (TDGmon * period)/24) %>%
-            mutate(obsPITPH = pitph(species = species, project = project_code, flow = flow, spill = obs_spill_prop))
+                   w_spill = (actual_spill_prop * period)/24,
+                   w_ph_entrance = (ph_entrance * period) /24,
+                   w_psp = (passage_weir * period)/24,
+                   w_turbine = (turbine * period)/24,
+                   w_transported = (transported * period)/24,
+                   w_rr = (rr * period)/24,
+                   w_spillway = (spillway * period)/24,
+                   w_PITPH = (PITPH * period)/24,
+                   w_TDG = (TDGmon * period)/24)
+
            )
   })
     
@@ -349,33 +389,79 @@ shinyServer(function(input, output) {
     dat() %>%
       mutate(project = factor(project, levels=project2)) %>%
       group_by(project, date) %>%
-      summarise(PITPH = sum(w_estPITPH, na.rm = TRUE),
-                SPE = 1 - PITPH,
+      summarise(PH_Entrance = sum(w_ph_entrance, na.rm = TRUE),
+                Passage_Weir = sum(w_psp, na.rm = TRUE),
+                Turbine = sum(w_turbine, na.rm = TRUE),
+                Transported = sum(w_transported, na.rm = TRUE),
+                Return_River = sum(w_rr, na.rm = TRUE),
+                Spillway = sum(w_spillway, na.rm = TRUE),
+                PITPH = sum(w_PITPH, na.rm = TRUE),
                 TDG = sum(w_TDG, na.rm = TRUE)) %>%
       ungroup() %>%
       group_by(project) %>%
-      summarise(PITPH = mean(PITPH, na.rm = TRUE),
-                SPE = mean(SPE, na.rm = TRUE),
-                TDG = 100 + mean(TDG, na.rm = TRUE)) %>%
+      summarise(#PH_Entrance = mean(PH_Entrance, na.rm = TRUE),
+                Passage_Weir = mean(Passage_Weir, na.rm = TRUE),
+                Turbine = mean(Turbine, na.rm = TRUE),
+                Transported = mean(Transported, na.rm = TRUE),
+                Return_River = mean(Return_River, na.rm = TRUE),
+                Spillway = mean(Spillway, na.rm = TRUE),
+                #All = Spillway + Passage_Weir + Turbine + Transported + Return_River,
+                PITPH = mean(PITPH, na.rm = TRUE),
+                SPE = 1-PITPH,
+                TDG = mean(TDG, na.rm = TRUE)+100) %>%
       rename(Project = project) %>%
+      select(Project, Spillway, everything()) %>%
       arrange(Project)
-    
   })
   
   output$system_table <- renderTable({ 
     
-      dat() %>%
-        mutate(project = factor(project, levels=project2)) %>%
-        group_by(project, date) %>%
-        summarise(PITPH = sum(w_estPITPH, na.rm = TRUE),
-                  SPE = 1 - PITPH) %>%
-        ungroup() %>%
-        group_by(project) %>%
-        summarise(PITPH = mean(PITPH, na.rm = TRUE),
-                  SPE = mean(SPE, na.rm = TRUE)) %>%
-        ungroup() %>%
-        summarise(`Total PITPH` = sum(PITPH),
-                  `Average SPE` = mean(SPE))
+    dat() %>%
+      mutate(project = factor(project, levels=project2)) %>%
+      group_by(project, date) %>%
+      summarise(PH_Entrance = sum(w_ph_entrance, na.rm = TRUE),
+                Passage_Weir = sum(w_psp, na.rm = TRUE),
+                Turbine = sum(w_turbine, na.rm = TRUE),
+                Transported = sum(w_transported, na.rm = TRUE),
+                Return_River = sum(w_rr, na.rm = TRUE),
+                Spillway = sum(w_spillway, na.rm = TRUE),
+                PITPH = sum(w_PITPH, na.rm = TRUE),
+                TDG = sum(w_TDG, na.rm = TRUE)) %>%
+      ungroup() %>%
+      group_by(project) %>%
+      summarise(#PH_Entrance = mean(PH_Entrance, na.rm = TRUE),
+        Passage_Weir = mean(Passage_Weir, na.rm = TRUE),
+        Turbine = mean(Turbine, na.rm = TRUE),
+        Transported = mean(Transported, na.rm = TRUE),
+        Return_River = mean(Return_River, na.rm = TRUE),
+        Spillway = mean(Spillway, na.rm = TRUE),
+        PITPH = mean(PITPH, na.rm = TRUE),
+        SPE = 1-PITPH) %>%
+      ungroup() %>%
+      summarise(`Total PITPH` = sum(PITPH),
+                  `Average SPE` = mean(SPE)) 
+
+      # 
+      # mutate(inriver = Spillway + Return_River + Turbine + Passage_Weir) %>%
+      # rename(Project = project) %>%
+      # arrange(Project)
+      # 
+      # 
+      # 
+      # 
+      # 
+      # dat() %>%
+      #   mutate(project = factor(project, levels=project2)) %>%
+      #   group_by(project, date) %>%
+      #   summarise(PITPH = sum(w_estPITPH, na.rm = TRUE),
+      #             SPE = 1 - PITPH) %>%
+      #   ungroup() %>%
+      #   group_by(project) %>%
+      #   summarise(PITPH = mean(PITPH, na.rm = TRUE),
+      #             SPE = mean(SPE, na.rm = TRUE)) %>%
+      #   ungroup() %>%
+      #   summarise(`Total PITPH` = sum(PITPH),
+      #             `Average SPE` = mean(SPE))
   })
   
   
@@ -388,7 +474,7 @@ shinyServer(function(input, output) {
       group_by(species, river, project, project_code, date) %>%
     summarise(w_spill = sum(w_spill),
               w_TDG = sum(w_TDG) + 100,
-              w_PITPH = sum(w_estPITPH)) %>%
+              w_PITPH = sum(w_PITPH)) %>%
       ungroup() %>%
       mutate(project = fct_relevel(project, project2),
              river = fct_inorder(river)) %>%

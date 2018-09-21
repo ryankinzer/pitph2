@@ -5,8 +5,8 @@ account: nptfisheries
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 434275
-bundleId: 1589919
+bundleId: 1590616
 url: https://nptfisheries.shinyapps.io/pitph2/
-when: 1537200652.26825
+when: 1537224303.86298
 asMultiple: FALSE
 asStatic: FALSE
