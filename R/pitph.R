@@ -23,7 +23,7 @@ pitph <- function(species = c('Chinook', 'Steelhead'),
    #  }
 
   #------------------------------------------------------------------------------
-  # Check flow and spill volumes and reset if out of compliance
+  # Check flow and spill inputs and make sure spill is proportion
   #------------------------------------------------------------------------------
   
    df <- tibble(id = 1:length(species), species, project_code, flow, spill) %>%
