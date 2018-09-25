@@ -1,5 +1,5 @@
 #------------------------------------------------------------------------------
-# Function calculates the estiamte PITPH based on CSS model coefficients.  
+# Function calculates the estimate PITPH based on CSS model coefficients.  
 #
 # Ryan N. Kinzer
 # August 2018
@@ -10,8 +10,7 @@ pitph <- function(species = c('Chinook', 'Steelhead'),
                   flow = NULL,
                   spill = NULL,
                   na.rm = TRUE){
-  
-  
+ 
   
    # if(!na.rm){
    # !is.null(flow)|| stop("flow is null")
