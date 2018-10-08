@@ -1,0 +1,96 @@
+---
+title: "SPE Curve Comparison between NOAA's COMPASS model and CSS calculations."
+author: 
+- name: Ryan N. Kinzer
+  affiliation: Nez Perce Tribe, Department of Fisheries Resources Management
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+
+output: 
+  pdf_document:
+    fig_caption: yes
+    fig_height: 7
+    fig_width: 8
+    keep_tex: yes
+    latex_engine: pdflatex
+    number_sections: yes
+    template: C:\Users\ryank\Documents\Ryan Sync\Templates\npt_latex_vignette.tex
+    #toc: yes
+    #toc_depth: 2
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+library(tidyverse)
+```
+
+```{r}
+ source('./R/mingenOps.R')
+ source('./R/pitph.R')
+ source('./R/getSPE.R')
+```
+
+```{r}
+project_name <- c('LWG', 'LGS', 'LMN', 'IHR', 'MCN', 'JDA', 'TDA', 'BON')
+species <- rep('Chinook',800)
+project_code <- rep(project_name, each = 100)
+spill <- rep(seq(.01,1, by = .01), 8)
+low <- rep(c(50, 175), each = 400)
+med <- rep(c(100, 250), each = 400)
+high <- rep(c(150, 400), each = 400)
+
+df <- tibble(species, project_code, spill, low, med, high) %>%
+  gather(flow_type, flow, low:high)
+```
+
+```{r}
+df <- df %>%
+  mingenOps() %>%
+  mutate(CSS = pitph(species = species, project = project_code, flow = flow, spill = actual_spill_prop),
+         CSS = 1-CSS,
+         NOAA = getSPE(species = species, project = project_code, flow = flow, spill = actual_spill_prop)) %>%
+  select(species, project_code, flow_type, flow, spill, actual_spill_prop, CSS, NOAA) %>%
+    gather(Model, value, CSS, NOAA) %>%
+    mutate(project_code = fct_relevel(project_code, project_name),
+         flow_type = fct_relevel(flow_type, c('low', 'med', 'high')),
+         Model = fct_relevel(Model, c('NOAA', 'CSS')))
+```
+
+```{r, fig.cap="Spill passage efficiency (SPE) curve comparison at low, medium and high flow volumes; Snake River: 50, 100 and 150 kcfs and Columbia River: 175, 250, and 400 kcfs."}
+df %>% 
+ggplot(aes(x = actual_spill_prop, y = value, colour = flow_type)) + 
+  geom_line(aes(linetype = Model), size = 1) +
+  scale_colour_viridis_d() +
+  facet_wrap(~project_code, ncol = 2) +
+  theme_bw() +
+  labs(colour = 'Flow Year',
+       linetype = 'SPE Curve',
+       y = 'Spill Passage Efficiency',
+       x = 'Spill Proportion')
+```
+
+```{r, fig.cap="Spill passage efficiency (SPE) curves for NOAA's COMPASS model at low, medium and high flow volumes; Snake River: 50, 100 and 150 kcfs and Columbia River: 175, 250, and 400 kcfs."}
+df %>% 
+  filter(Model == 'NOAA') %>%
+ggplot(aes(x = actual_spill_prop, y = value, colour = flow_type)) + 
+  geom_line(size = 1) +
+  scale_colour_viridis_d() +
+  facet_wrap(~project_code, ncol = 2) +
+  theme_bw() +
+  labs(colour = 'Flow Year',
+       y = 'Spill Passage Efficiency',
+       x = 'Spill Proportion')
+```
+
+Table 1. Minimum and maximum power house capacity assumption differences between NOAA's COMPASS model and the values currently used in the Nez Perce Tribe's PITPH web application tool.
+
+ Project | Minimum - NOAA | Minimum - PITPH | Maximum - NOAA | Maximum - PITPH
+:--------|:--------------:|:---------------:|:--------------:|:--------------:
+ LWG |12.4 | 12.0   | 130 | 118.0
+ LGS |11.6 | 12.0   | 130 | 118.0
+ LMN |11.6 | 14.5 | 130 | 115.5
+ IHR |9.1 | 10.5 | 106 | 95.5
+ MCN |55.0 | 55.0   | 232 | 177.0
+ JDA |55.0 | 51.2 | 322 | 270.8
+ TDA |55.0 | 56.0   | 375 | 319.0
+ BON1 |35.0 | 42.0   | 136 | 349
+ BON2 | | | 152 | 

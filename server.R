@@ -13,6 +13,7 @@ library(tidyverse)
 
 source('./R/simFlow.R')
 source('./R/pitph.R')
+source('./R/getSPE.R')
 source('./R/mingenOps.R')
 source('./R/queryRiverData.R')
 #source('./R/GasGen.R')
@@ -668,7 +669,7 @@ shinyServer(function(input, output) {
       ggplot(tmp_df, aes(x = actual_spill_prop, y = tranPITPH, group = project_code, colour = project)) + # changed data from tmp_curve
         geom_line(size = 2) +
         #geom_text(aes(label = round(TDG)+100),hjust = 1, colour = 'black') +
-        geom_point(aes(fill = round(TDG)+100), shape = 21, size = 3) +
+        #geom_point(aes(fill = round(TDG)+100), shape = 21, size = 3) +
         scale_color_viridis_d() +
         scale_x_continuous(breaks = seq(0,1, by = .1), labels = seq(0, 1, by = .1)) +
         scale_y_continuous(breaks = seq(0,1, by = .1), labels = seq(0, 1, by = .1)) +
