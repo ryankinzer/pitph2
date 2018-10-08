@@ -5,8 +5,9 @@ account: nptfisheries
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 434275
-bundleId: 1621149
+bundleId: 1630082
 url: https://nptfisheries.shinyapps.io/pitph2/
-when: 1538594240.58283
+when: 1539024314.86621
 asMultiple: FALSE
 asStatic: FALSE
+ignoredFiles: spe_comparisons.pdf|spe_comparisons.Rmd|spe_comparisons.tex|spe_functions_plots.pdf|test_pitph_high_flow_plots.pdf|data/example_flow_data.csv|data/noaa_spe_params.csv|spe_comparisons_files/figure-latex/unnamed-chunk-4-1.pdf|spe_comparisons_files/figure-latex/unnamed-chunk-5-1.pdf

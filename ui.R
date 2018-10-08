@@ -65,7 +65,7 @@ shinyUI(
                         #  column(3,
                                  radioButtons(inputId = 'spe_curve',
                                               label = h3(tags$b('Spill Passage Efficiency Curves:')),
-                                              choices = c('CSS', 'COMPASS (Currently not available.)'),
+                                              choices = c('CSS', 'COMPASS'),
                                               selected = 'CSS', inline = TRUE),#),
                          #  column(3,
                             radioButtons(inputId = 'spp_input',
