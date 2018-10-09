@@ -87,6 +87,9 @@ pitph <- inner_join(df, coef_df, by = c('species', 'project_code')) %>%
   inner_join(fge_df, by = c('species', 'project_code')) %>%
   mutate(PITPH = ifelse(project_code == 'BON', (1-BON_cc)*(1-BON_sp),
                         inv_logit/fge)) %>%
+  left_join(select(df, id, tmp_spill_prop), by = 'id') %>%
+  mutate(PITPH = ifelse(!(project_code %in% c('TDA', 'BON')) & tmp_spill_prop == 0, 1, PITPH)) %>% # 
+  mutate(PITPH = ifelse(PITPH > 1, 1, PITPH)) %>%
   arrange(id) %>%
   pull(PITPH)
 

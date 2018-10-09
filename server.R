@@ -19,7 +19,7 @@ source('./R/queryRiverData.R')
 #source('./R/GasGen.R')
 source('./R/zTDGSpill.R')
 source('./R/zTDGMON.R')
-load(file = './data/flow_data.rda')
+#load(file = './data/flow_data.rda')
 
 
 # Define server logic required
@@ -311,52 +311,71 @@ shinyServer(function(input, output) {
            )
   })
   
-  mod_dat <- reactive({
+  dat <- reactive({
     
     switch(input$spe_curve,
             'CSS' = flow_dat() %>%
-             mutate(ph_entrance = pitph(species = species, project = project_code, flow = flow, spill = actual_spill_prop)),
+             mutate(ph_entrance = pitph(species = species, project = project_code, flow = flow, spill = actual_spill_prop)) %>%
+             mutate(CSS_PITPH = pitph(species = species, project = project_code, flow = flow, spill = actual_spill_prop),
+                    NOAA_PITPH = 1 - (getSPE(species = species, project = project_code, flow = flow, spill = actual_spill_prop)),
+                    transport = if_else(yday(date) >= 115 & project_code %in% c('LWG', 'LGS', 'LMN'), 1, 0),
+                    passage_weir = ph_entrance * psp,
+                    ph = ph_entrance - passage_weir, # becomes PITPH
+                    jbs = ph * fge,
+                    turbine = ph - jbs,
+                    transported = jbs * transport,
+                    rr = jbs - transported,
+                    spillway = 1 - (passage_weir + turbine + transported + rr),
+                    PITPH_psp = ph, #(turbine + rr)/(turbine + rr + spillway + passage_weir),
+                    SPE = 1-PITPH_psp,
+                    TDGmon = zTDGMON(project_code = project_code, forebay_gas = 10, flow = flow, spill_prop = actual_spill_prop),
+                    TDGspill = zTDGSpill(project_code = project_code, flow = flow, spill_prop = actual_spill_prop),
+                    w_spill = (actual_spill_prop * period)/24,
+                    w_css = (CSS_PITPH * period)/24,
+                    w_noaa = (NOAA_PITPH * period)/24,
+                    w_ph_entrance = (ph_entrance * period) /24,
+                    w_psp = (passage_weir * period)/24,
+                    w_turbine = (turbine * period)/24,
+                    w_transported = (transported * period)/24,
+                    w_rr = (rr * period)/24,
+                    w_spillway = (spillway * period)/24,
+                    w_PITPH = (PITPH_psp * period)/24,
+                    w_TDG = (TDGmon * period)/24)
+             ,
 
             'COMPASS' = flow_dat() %>%
              mutate(tmp_spe = getSPE(species = species, project = project_code, flow = flow, spill = actual_spill_prop),
                     ph_entrance = 1-tmp_spe) %>%
+             mutate(CSS_PITPH = pitph(species = species, project = project_code, flow = flow, spill = actual_spill_prop),
+                    NOAA_PITPH = 1 - (getSPE(species = species, project = project_code, flow = flow, spill = actual_spill_prop)),
+                    transport = if_else(yday(date) >= 115 & project_code %in% c('LWG', 'LGS', 'LMN'), 1, 0),
+                    passage_weir = ph_entrance * psp,
+                    ph = ph_entrance - passage_weir, # becomes PITPH
+                    jbs = ph * fge,
+                    turbine = ph - jbs,
+                    transported = jbs * transport,
+                    rr = jbs - transported,
+                    spillway = 1 - (passage_weir + turbine + transported + rr),
+                    PITPH_psp = ph, #(turbine + rr)/(turbine + rr + spillway + passage_weir),
+                    SPE = 1-PITPH_psp,
+                    TDGmon = zTDGMON(project_code = project_code, forebay_gas = 10, flow = flow, spill_prop = actual_spill_prop),
+                    TDGspill = zTDGSpill(project_code = project_code, flow = flow, spill_prop = actual_spill_prop),
+                    w_spill = (actual_spill_prop * period)/24,
+                    w_css = (CSS_PITPH * period)/24,
+                    w_noaa = (NOAA_PITPH * period)/24,
+                    w_ph_entrance = (ph_entrance * period) /24,
+                    w_psp = (passage_weir * period)/24,
+                    w_turbine = (turbine * period)/24,
+                    w_transported = (transported * period)/24,
+                    w_rr = (rr * period)/24,
+                    w_spillway = (spillway * period)/24,
+                    w_PITPH = (PITPH_psp * period)/24,
+                    w_TDG = (TDGmon * period)/24) %>%
              select(-tmp_spe)
     )
     
   })
   
-  dat <- reactive({
-      
-      mod_dat() %>%
-      mutate(CSS_PITPH = pitph(species = species, project = project_code, flow = flow, spill = actual_spill_prop),
-             NOAA_PITPH = 1 - (getSPE(species = species, project = project_code, flow = flow, spill = actual_spill_prop)),
-             transport = if_else(yday(date) >= 115 & project_code %in% c('LWG', 'LGS', 'LMN'), 1, 0),
-             passage_weir = ph_entrance * psp,
-             ph = ph_entrance - passage_weir,
-             jbs = ph * fge,
-             turbine = ph - jbs,
-             transported = jbs * transport,
-             rr = jbs - transported,
-             spillway = 1 - (passage_weir + turbine + transported + rr),
-             PITPH = (turbine + rr)/(turbine + rr + spillway + passage_weir),
-             SPE = 1-PITPH,
-             TDGmon = zTDGMON(project_code = project_code, forebay_gas = 10, flow = flow, spill_prop = actual_spill_prop),
-             TDGspill = zTDGSpill(project_code = project_code, flow = flow, spill_prop = actual_spill_prop),
-             w_spill = (actual_spill_prop * period)/24,
-             w_css = (CSS_PITPH * period)/24,
-             w_noaa = (NOAA_PITPH * period)/24,
-             w_ph_entrance = (ph_entrance * period) /24,
-             w_psp = (passage_weir * period)/24,
-             w_turbine = (turbine * period)/24,
-             w_transported = (transported * period)/24,
-             w_rr = (rr * period)/24,
-             w_spillway = (spillway * period)/24,
-             w_PITPH = (PITPH * period)/24,
-             w_TDG = (TDGmon * period)/24)
-
-  })
-
-
   output$param_dat_table <- DT::renderDT({
     DT::datatable(dat() %>%
       mutate(date = str_sub(as.character(date),start = 6)) %>%
@@ -376,7 +395,7 @@ shinyServer(function(input, output) {
   )
 
   
-  output$project_table <- renderTable({ 
+  output$project_table <- renderTable(align = 'c', { 
 
     dat() %>%
       mutate(project = factor(project, levels=project2)) %>%
@@ -389,7 +408,7 @@ shinyServer(function(input, output) {
                 Transported = sum(w_transported, na.rm = TRUE),
                 Return_River = sum(w_rr, na.rm = TRUE),
                 Spillway = sum(w_spillway, na.rm = TRUE),
-                PITPH = sum(w_PITPH, na.rm = TRUE),
+                PITPH_psp = sum(w_PITPH, na.rm = TRUE),
                 TDG = sum(w_TDG, na.rm = TRUE)) %>%
       ungroup() %>%
       group_by(project) %>%
@@ -402,15 +421,15 @@ shinyServer(function(input, output) {
                 Return_River = mean(Return_River, na.rm = TRUE),
                 Spillway = mean(Spillway, na.rm = TRUE),
                 #All = Spillway + Passage_Weir + Turbine + Transported + Return_River,
-                Transported_PITPH = mean(PITPH, na.rm = TRUE),
-                SPE = 1-Transported_PITPH,
+                PITPH_psp = mean(PITPH_psp, na.rm = TRUE),
+                SPE = 1-PITPH_psp,
                 TDG = mean(TDG, na.rm = TRUE)+100) %>%
       rename(Project = project) %>%
       select(Project, Spillway, everything()) %>%
       arrange(Project)
   })
   
-  output$system_table <- renderTable({ 
+  output$system_table <- renderTable(align = 'c', { 
     
     dat() %>%
       mutate(project = factor(project, levels=project2)) %>%
@@ -423,7 +442,7 @@ shinyServer(function(input, output) {
                 Transported = sum(w_transported, na.rm = TRUE),
                 Return_River = sum(w_rr, na.rm = TRUE),
                 Spillway = sum(w_spillway, na.rm = TRUE),
-                PITPH = sum(w_PITPH, na.rm = TRUE),
+                PITPH_psp = sum(w_PITPH, na.rm = TRUE),
                 TDG = sum(w_TDG, na.rm = TRUE)) %>%
       ungroup() %>%
       group_by(project) %>%
@@ -435,12 +454,12 @@ shinyServer(function(input, output) {
         Transported = mean(Transported, na.rm = TRUE),
         Return_River = mean(Return_River, na.rm = TRUE),
         Spillway = mean(Spillway, na.rm = TRUE),
-        PITPH = mean(PITPH, na.rm = TRUE),
-        SPE = 1-PITPH) %>%
+        PITPH_psp = mean(PITPH_psp, na.rm = TRUE),
+        SPE = 1-PITPH_psp) %>%
       ungroup() %>%
       summarise(`CSS PITPH` = sum(CSS_PITPH),
                 `NOAA PITPH` = sum(NOAA_PITPH),
-                `Total PITPH` = sum(PITPH),
+                `Powerhouse Encounters Inc. PSP` = sum(PITPH_psp),
                 `Average SPE` = mean(SPE)) 
 
       # 
@@ -642,17 +661,35 @@ shinyServer(function(input, output) {
                          project = project2), by = 'project_code') %>%
         mutate(species = rep(input$spp_input,n()),
                transport = if_else(yday(date) >= 115 & project_code %in% c('LWG', 'LGS', 'LMN'), 1, 0)) %>%
-        mingenOps() %>%
-        mutate(PITPH = pitph(species = species, project = project_code, flow = flow, spill = actual_spill_prop),
-               pspPITPH = PITPH * (1-psp),
-               tranPITPH = pspPITPH - ((pspPITPH * fge) * transport),
-               actual_spill_prop = round(actual_spill_prop, 2),
-               actual_spill_vol = round(actual_spill_vol, 0),
-               project_code = fct_inorder(project_code),
-               project = fct_inorder(project),
-               TDG = zTDGMON(project_code = project_code, forebay_gas = 10, flow = flow, spill_prop = actual_spill_prop))
+        mingenOps()
       
-      ggplot(tmp_df, aes(x = actual_spill_prop, y = tranPITPH, group = project_code, colour = project)) + # changed data from tmp_curve
+        if(input$spe_curve == 'CSS'){
+          
+          tmp_df <- tmp_df %>%
+            mutate(PITPH = pitph(species = species, project = project_code, flow = flow, spill = actual_spill_prop),
+                   pspPITPH = PITPH * (1-psp),
+                   tranPITPH = pspPITPH - ((pspPITPH * fge) * transport),
+                   actual_spill_prop = round(actual_spill_prop, 2),
+                   actual_spill_vol = round(actual_spill_vol, 0),
+                   project_code = fct_inorder(project_code),
+                   project = fct_inorder(project),
+                   TDG = zTDGMON(project_code = project_code, forebay_gas = 10, flow = flow, spill_prop = actual_spill_prop))
+        }
+      
+        if(input$spe_curve == 'COMPASS'){
+          
+          tmp_df <- tmp_df %>%
+            mutate(PITPH = 1 - getSPE(species = species, project = project_code, flow = flow, spill = actual_spill_prop),
+                   pspPITPH = PITPH * (1-psp),
+                   tranPITPH = pspPITPH - ((pspPITPH * fge) * transport),
+                   actual_spill_prop = round(actual_spill_prop, 2),
+                   actual_spill_vol = round(actual_spill_vol, 0),
+                   project_code = fct_inorder(project_code),
+                   project = fct_inorder(project),
+                   TDG = zTDGMON(project_code = project_code, forebay_gas = 10, flow = flow, spill_prop = actual_spill_prop))
+        }
+
+      ggplot(tmp_df, aes(x = actual_spill_prop, y = pspPITPH, group = project_code, colour = project)) + # changed data from tmp_curve
         geom_line(size = 2) +
         #geom_text(aes(label = round(TDG)+100),hjust = 1, colour = 'black') +
         #geom_point(aes(fill = round(TDG)+100), shape = 21, size = 3) +
@@ -688,14 +725,32 @@ shinyServer(function(input, output) {
     tmp_df <- bind_rows(snake_df, col_df) %>%
       inner_join(psp_dat(), by = 'project_code') %>%
       mutate(species = rep(input$spp_input,n())) %>%
-      mingenOps() %>%
-      mutate(PITPH = pitph(species = species, project = project_code, flow = flow, spill = actual_spill_prop),
-             pspPITPH = PITPH * (1-psp),
-             actual_spill_prop = round(actual_spill_prop, 2),
-             actual_spill_vol = round(actual_spill_vol, 0),
-             project = fct_inorder(project),
-             project_code = fct_inorder(project_code),
-             TDG = zTDGMON(project_code = project_code, forebay_gas = 10, flow = flow, spill_prop = actual_spill_prop)) #%>%
+      mingenOps()
+    
+      if(input$spe_curve=='CSS'){
+        
+        tmp_df <- tmp_df %>%
+          mutate(PITPH = pitph(species = species, project = project_code, flow = flow, spill = actual_spill_prop),
+                 pspPITPH = PITPH * (1-psp),
+                 actual_spill_prop = round(actual_spill_prop, 2),
+                 actual_spill_vol = round(actual_spill_vol, 0),
+                 project = fct_inorder(project),
+                 project_code = fct_inorder(project_code),
+                 TDG = zTDGMON(project_code = project_code, forebay_gas = 10, flow = flow, spill_prop = actual_spill_prop))
+      }
+    
+      if(input$spe_curve=='COMPASS'){
+        
+        tmp_df <- tmp_df %>%
+          mutate(PITPH = 1 - getSPE(species = species, project = project_code, flow = flow, spill = actual_spill_prop),
+                 pspPITPH = PITPH * (1-psp),
+                 actual_spill_prop = round(actual_spill_prop, 2),
+                 actual_spill_vol = round(actual_spill_vol, 0),
+                 project = fct_inorder(project),
+                 project_code = fct_inorder(project_code),
+                 TDG = zTDGMON(project_code = project_code, forebay_gas = 10, flow = flow, spill_prop = actual_spill_prop))
+      }
+#%>%
      #rowwise() %>%
      # mutate(TDG = zTDGMON(project_code, forebay_gas = 10, spill_prop = actual_spill_prop, flow = flow)) %>%
      # ungroup()
